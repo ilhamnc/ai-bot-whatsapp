@@ -34,20 +34,44 @@ export const aiMemoryFile = path.join(stateDir, 'ai-memory.json');
 export const botMentionIdsFile = path.join(stateDir, 'bot-mention-ids.json');
 
 export function validateConfig() {
-  validateEncryptionKey();
+  const errors = [];
   if (!['gemini', 'openai'].includes(AI_PROVIDER)) {
-    throw new Error('AI_PROVIDER harus bernilai "gemini" atau "openai".');
+    errors.push('AI_PROVIDER harus bernilai "gemini" atau "openai".');
   }
   if (!AI_API_KEY || AI_API_KEY.startsWith('isi_api_key_')) {
-    throw new Error('AI_API_KEY belum diisi. Ubah file .env atau environment layanan.');
+    errors.push('AI_API_KEY belum diisi. Tambahkan secret AI_API_KEY di .env atau environment layanan.');
+  }
+  try {
+    validateEncryptionKey();
+  } catch (error) {
+    errors.push(error.message);
   }
   if (TARGET_GROUP && !TARGET_GROUP.endsWith('@g.us')) {
-    throw new Error('WA_GROUP_ID harus berakhiran @g.us');
+    errors.push('WA_GROUP_ID harus berakhiran @g.us. Kosongkan jika grup dipilih lewat dashboard atau !idgrup.');
   }
   let aiUrl;
   try { aiUrl = new URL(AI_BASE_URL); }
-  catch { throw new Error('AI_BASE_URL harus berupa URL yang valid.'); }
-  if (aiUrl.protocol !== 'https:' && !['localhost', '127.0.0.1', '::1', '[::1]'].includes(aiUrl.hostname)) {
-    throw new Error('AI_BASE_URL untuk host eksternal wajib memakai HTTPS agar kunci API tidak terkirim tanpa enkripsi.');
+  catch { errors.push('AI_BASE_URL harus berupa URL yang valid.'); }
+  if (aiUrl && aiUrl.protocol !== 'https:' && !['localhost', '127.0.0.1', '::1', '[::1]'].includes(aiUrl.hostname)) {
+    errors.push('AI_BASE_URL untuk host eksternal wajib memakai HTTPS agar kunci API tidak terkirim tanpa enkripsi.');
+  }
+
+  // Validasi dashboard publik digabung agar startup menampilkan semua kesalahan sekaligus.
+  const dashboardHost = process.env.DASHBOARD_HOST?.trim() || '127.0.0.1';
+  const dashboardUser = process.env.DASHBOARD_USER?.trim() || '';
+  const dashboardPassword = process.env.DASHBOARD_PASSWORD || '';
+  const dashboardIsLocal = ['127.0.0.1', '::1', 'localhost'].includes(dashboardHost);
+  if ((dashboardUser && !dashboardPassword) || (!dashboardUser && dashboardPassword)) {
+    errors.push('DASHBOARD_USER dan DASHBOARD_PASSWORD harus diisi bersama.');
+  }
+  if (!dashboardIsLocal && !dashboardUser) {
+    errors.push('Dashboard menerima koneksi luar. Isi DASHBOARD_USER dan DASHBOARD_PASSWORD.');
+  }
+  if (!dashboardIsLocal && dashboardPassword.length < 16) {
+    errors.push('DASHBOARD_PASSWORD untuk akses dari luar harus memiliki minimal 16 karakter.');
+  }
+
+  if (errors.length) {
+    throw new Error(errors.map(message => `- ${message}`).join('\n'));
   }
 }

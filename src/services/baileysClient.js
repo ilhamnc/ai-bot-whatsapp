@@ -211,6 +211,55 @@ export class BaileysClient extends EventEmitter {
     return message;
   }
 
+  // Cocokkan mention dengan identitas akun, termasuk pasangan nomor dan LID WhatsApp.
+  async isOwnMention(mentionedIds = [], extraOwnIds = []) {
+    const socket = this.socket;
+    const mapping = socket?.signalRepository?.lidMapping;
+    const normalize = value => {
+      if (typeof value !== 'string' || !value.includes('@')) return '';
+      try { return jidNormalizedUser(value.toLowerCase()); }
+      catch { return value.toLowerCase(); }
+    };
+    const ownIds = [
+      this.info?.wid?._serialized,
+      socket?.user?.id,
+      socket?.user?.lid,
+      ...extraOwnIds
+    ].map(normalize).filter(Boolean);
+    const mentions = mentionedIds.map(normalize).filter(Boolean);
+    if (!ownIds.length || !mentions.length) return false;
+
+    const sameIdentity = (left, right) => {
+      if (left === right) return true;
+      const [leftUser, leftServer] = left.split('@');
+      const [rightUser, rightServer] = right.split('@');
+      const phoneServers = new Set(['c.us', 's.whatsapp.net']);
+      return leftUser?.split(':')[0] === rightUser?.split(':')[0]
+        && phoneServers.has(leftServer) && phoneServers.has(rightServer);
+    };
+    if (mentions.some(id => ownIds.some(ownId => sameIdentity(id, ownId)))) return true;
+    if (!mapping) return false;
+
+    try {
+      const aliases = await Promise.all(ownIds.map(async id => {
+        if (id.endsWith('@lid')) return mapping.getPNForLID(id);
+        if (id.endsWith('@s.whatsapp.net') || id.endsWith('@c.us')) return mapping.getLIDForPN(id);
+        return null;
+      }));
+      const mentionAliases = await Promise.all(mentions.map(async id => {
+        if (id.endsWith('@lid')) return mapping.getPNForLID(id);
+        if (id.endsWith('@s.whatsapp.net') || id.endsWith('@c.us')) return mapping.getLIDForPN(id);
+        return null;
+      }));
+      const allOwnIds = [...ownIds, ...aliases.map(normalize).filter(Boolean)];
+      return mentions.some((id, index) => allOwnIds.some(ownId => sameIdentity(id, ownId)
+        || (mentionAliases[index] && sameIdentity(normalize(mentionAliases[index]), ownId))));
+    } catch {
+      // Pemetaan LID belum tentu tersedia sebelum WhatsApp menyinkronkannya.
+      return false;
+    }
+  }
+
   async sendMessage(chatId, text, options = {}) {
     if (!this.socket) throw new Error('WhatsApp belum terhubung.');
     const mentionAll = options.extra?.nonJidMentions === 1;

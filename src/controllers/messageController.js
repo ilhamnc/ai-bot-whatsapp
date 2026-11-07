@@ -38,6 +38,7 @@ const HELP_MESSAGE = [
   'Pengaturan reminder dan jadwal shalat tersedia di dashboard lokal.',
   'Admin: !hapusriwayat menghapus arsip chat grup.'
 ].join('\n');
+const BOT_NAME_MENTION = /@~?AiBot(?:\s*🤖)?(?=\s|$)/i;
 
 // BOT_MENTION_IDS dapat menambahkan ID @lid jika WhatsApp memakai ID lain.
 function normalizeMentionId(id) {
@@ -57,25 +58,21 @@ function saveBotMentionId(id) {
   botMentionIds = ids;
 }
 
-function isCalledWithMention(msg, text, client) {
+async function isCalledWithMention(msg, text, client) {
   const mentions = (Array.isArray(msg.mentionedIds) ? msg.mentionedIds : [])
     .map(normalizeMentionId).filter(Boolean);
-  if (/^@AiBot\b/i.test(text)) return true;
+  if (new RegExp(`^${BOT_NAME_MENTION.source}`, 'i').test(text)) return true;
   if (mentions.length === 0) return false;
-  const selfId = normalizeMentionId(client.info?.wid);
   const extraIds = (process.env.BOT_MENTION_IDS || '')
     .split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
-  const ownIds = [selfId, ...extraIds, ...registeredMentionIds()].filter(Boolean);
-  const matchedId = mentions.some(id => ownIds.some(ownId =>
-    id === ownId || (id.split('@')[0] === ownId.split('@')[0] && id.split('@')[0].length > 5)
-  ));
-  if (matchedId) return true;
+  const savedIds = [...extraIds, ...registeredMentionIds()];
+  if (await client.isOwnMention(msg.mentionedIds, savedIds)) return true;
   // Fallback aman untuk nama yang sudah dikenal: harus ada metadata mention asli.
-  if (/@AiBot\b/i.test(text)) return true;
+  if (BOT_NAME_MENTION.test(text)) return true;
   return false;
 }
 function removeBotTag(text) {
-  return text.replace(/@AiBot\b/i, ' ')
+  return text.replace(/@~?AiBot(?:\s*🤖)?/ig, ' ')
     .replace(/@\d{5,}(?=\s|$)/g, ' ')
     .replace(/\s+/g, ' ').trim();
 }
@@ -110,7 +107,7 @@ client.on("message", async msg => {
     if (body.toLowerCase() === '!help') return msg.reply(HELP_MESSAGE);
     if (!msg.from?.endsWith('@g.us')) return;
     // Beberapa versi WhatsApp tidak mengisi mentionedIds.
-    const writtenMention = /^@AiBot\b/i.test(body);
+    const writtenMention = new RegExp(`^${BOT_NAME_MENTION.source}`, 'i').test(body);
     const hasMentionMetadata = Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0;
     if (msg.from === getTargetGroup() && (writtenMention || hasMentionMetadata)) {
       console.log('[MENTION] masuk | @AiBot:', writtenMention, '| jumlah metadata:', Array.isArray(msg.mentionedIds) ? msg.mentionedIds.length : 0);
@@ -251,7 +248,7 @@ client.on("message", async msg => {
       }
       return;
     }
-    if (/^!ai(?:\s|$)/i.test(body) || isCalledWithMention(msg, body, client) || quotedBotMessage) {
+    if (/^!ai(?:\s|$)/i.test(body) || await isCalledWithMention(msg, body, client) || quotedBotMessage) {
       const question = /^!ai(?:\s|$)/i.test(body) ? body.slice(3).trim() :
         removeBotTag(body)
           .replace(/^@?\d+@(lid|c\.us)\s*/i, '')

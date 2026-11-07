@@ -1,16 +1,38 @@
 // Entry point: server dashboard, koneksi WhatsApp, dan jadwal pengingat.
 import cron from 'node-cron';
 import { REMINDER_CRON, AI_MODELS, AI_PROVIDER, validateConfig } from './src/config.js';
-import { getTargetGroup } from './src/models/botSettingsModel.js';
-import { closeChatHistoryDatabase } from './src/models/chatHistoryModel.js';
-import { getPrayerReminderSettings, getReminders } from './src/models/reminderModel.js';
-import { AI_PROVIDER_NAME } from './src/services/aiService.js';
-import { syncReminderSchedules } from './src/services/reminderScheduler.js';
-import { createWhatsAppConnectionManager } from './src/services/whatsappConnectionService.js';
-import { createDashboardServer } from './src/routes/dashboardRoutes.js';
 
-if (!cron.validate(REMINDER_CRON)) throw new Error('Ekspresi cron tidak valid.');
-validateConfig();
+try {
+  validateConfig();
+} catch (error) {
+  console.error('[KONFIGURASI] Startup dihentikan. Perbaiki pengaturan berikut:');
+  for (const message of error.message.split('\n')) console.error(`[KONFIGURASI] ${message.replace(/^-\s*/, '')}`);
+  process.exit(1);
+}
+
+if (!cron.validate(REMINDER_CRON)) {
+  console.error('[KONFIGURASI] Startup dihentikan: ekspresi cron bawaan tidak valid.');
+  process.exit(1);
+}
+
+// Periksa konfigurasi sebelum memuat model yang membaca file terenkripsi saat import.
+const [
+  { getTargetGroup },
+  { closeChatHistoryDatabase },
+  { getPrayerReminderSettings, getReminders },
+  { AI_PROVIDER_NAME },
+  { syncReminderSchedules },
+  { createWhatsAppConnectionManager },
+  { createDashboardServer }
+] = await Promise.all([
+  import('./src/models/botSettingsModel.js'),
+  import('./src/models/chatHistoryModel.js'),
+  import('./src/models/reminderModel.js'),
+  import('./src/services/aiService.js'),
+  import('./src/services/reminderScheduler.js'),
+  import('./src/services/whatsappConnectionService.js'),
+  import('./src/routes/dashboardRoutes.js')
+]);
 
 const connectionManager = createWhatsAppConnectionManager(() => {
   console.log(`Pengingat terjadwal: ${getReminders().filter(reminder => reminder.enabled).length}. Grup: ${getTargetGroup() ? 'sudah dipilih' : 'belum dipilih'}.`);
@@ -29,15 +51,11 @@ const dashboardPort = Number(process.env.PORT || process.env.DASHBOARD_PORT || 3
 const dashboardHost = process.env.DASHBOARD_HOST?.trim() || '127.0.0.1';
 const dashboardUser = process.env.DASHBOARD_USER?.trim() || '';
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || '';
-const isLocalDashboard = ['127.0.0.1', '::1', 'localhost'].includes(dashboardHost);
-if ((dashboardUser && !dashboardPassword) || (!dashboardUser && dashboardPassword)) {
-  throw new Error('DASHBOARD_USER dan DASHBOARD_PASSWORD harus diisi bersama.');
+if (!process.env.BOT_ADMIN_IDS?.trim()) {
+  console.warn('[KONFIGURASI] BOT_ADMIN_IDS kosong; perintah khusus admin WhatsApp tidak akan tersedia.');
 }
-if (!isLocalDashboard && !dashboardUser) {
-  throw new Error('Dashboard yang menerima koneksi luar wajib memakai DASHBOARD_USER dan DASHBOARD_PASSWORD.');
-}
-if (!isLocalDashboard && dashboardPassword.length < 16) {
-  throw new Error('DASHBOARD_PASSWORD untuk akses dari luar harus memiliki minimal 16 karakter.');
+if (!process.env.BOT_MENTION_IDS?.trim()) {
+  console.info('[KONFIGURASI] BOT_MENTION_IDS kosong; mention akun akan dicocokkan otomatis dari ID WhatsApp/LID.');
 }
 const dashboardServer = createDashboardServer(
   syncSchedules,
