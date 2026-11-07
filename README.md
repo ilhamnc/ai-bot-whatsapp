@@ -1,6 +1,6 @@
 ﻿# Bot AI WhatsApp
 
-Bot untuk satu grup WhatsApp. Bot menjawab pertanyaan melalui Gemini atau API yang kompatibel dengan format OpenAI, dan dapat mengirim reminder Seninâ€“Jumat pukul 14.30 WIB.
+Bot untuk satu grup WhatsApp. Bot menjawab pertanyaan melalui Gemini atau API yang kompatibel dengan format OpenAI, dan dapat mengirim reminder Senin–Jumat pukul 14.30 WIB.
 
 ## Struktur proyek
 
@@ -37,7 +37,7 @@ Dashboard dapat menambah, mengedit, mengaktifkan/nonaktifkan, dan menghapus remi
 1. Pasang Node.js 22 atau lebih baru dan Chrome/Chromium.
 2. Jalankan `npm ci` di folder proyek.
 3. Salin `.env.example` menjadi `.env` dan atur `AI_PROVIDER`, `AI_API_KEY`, serta `AI_MODEL`.
-4. Jalankan `npm start`, lalu pindai QR melalui WhatsApp â†’ Perangkat tertaut.
+4. Jalankan `npm start`, lalu buka `http://127.0.0.1:3030` dan pindai QR melalui WhatsApp > Perangkat tertaut > Tautkan perangkat.
 5. Di grup tujuan, kirim `!idgrup`. Salin ID dari terminal ke `WA_GROUP_ID`, lalu mulai ulang bot.
 6. Kirim `!myid`. Masukkan ID dari terminal ke `BOT_ADMIN_IDS`, lalu mulai ulang bot.
 
