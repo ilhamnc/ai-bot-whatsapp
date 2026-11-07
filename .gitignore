@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.wwebjs_auth/
+.wwebjs_cache/
+.state/
+.vscode/
+bot-backup-*.js
+hasil-cek-gemini.json
+hasil-cek-ai.json
+*.log
+*.tmp
