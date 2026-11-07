@@ -26,14 +26,15 @@
     .times-list { display:flex; flex-wrap:wrap; gap:7px; } .time-row { display:flex; align-items:center; gap:5px; width:calc(50% - 4px); min-width:140px; } .time-row input { flex:1; width:auto; min-width:0; } .time-row button { padding:5px 9px; }
     .shalat-panel { margin-top:14px } .shalat-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; } .shalat-head p { font-size:13px; } .shalat-head .daftar-tombol { margin:0; } .shalat-messages { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; margin-top:12px; } .shalat-message textarea { min-height:58px; } .shalat-result { margin-top:10px; padding:8px 10px; border-radius:9px; background:#111512; border:1px solid #262e28; font-size:13px; color:var(--redup); } .info-pengaturan { color:var(--redup); font-size:13px; } .bilah-atas #bukaPengaturanLokasi { margin-left:auto; }
     .shalat-pilihan-baris { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; } .shalat-pilihan-baris .hari-pilihan { flex:1; } .shalat-pilihan-baris button { flex-shrink:0; }
-    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom,.shalat-messages { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
+    .aksi-header { display:flex; gap:8px; flex-wrap:wrap; } .bantuan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .bantuan-bagian { background:#111512; border:1px solid var(--garis); border-radius:12px; padding:14px; } .bantuan-bagian h3 { margin:0 0 8px; font-size:16px; } .bantuan-bagian ul,.bantuan-bagian ol { margin:0; padding-left:20px; } .bantuan-bagian li { margin:6px 0; } .bantuan-bagian code { color:var(--hijau); overflow-wrap:anywhere; }
+    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom,.shalat-messages,.bantuan-grid { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
 <body>
 <main>
   <header>
     <div><h1>Pengingat AiBot</h1><p>Atur beberapa pesan terjadwal untuk grup WhatsApp.</p></div>
-    <button id="tambahPengingat" class="utama" type="button">＋ Tambah pengingat</button>
+    <div class="aksi-header"><button id="bukaBantuan" type="button">Bantuan</button><button id="tambahPengingat" class="utama" type="button">＋ Tambah pengingat</button></div>
   </header>
   <section class="panel-form koneksi" aria-live="polite">
     <img id="connectionQr" alt="Kode QR untuk menghubungkan WhatsApp" hidden>
@@ -44,6 +45,35 @@
     <button id="bukaPengaturanLokasi" type="button" class="info-pengaturan">📍 Jakarta, Indonesia · Asia/Jakarta · Pengaturan</button>
   </section>
   <div id="pesanStatus" class="pesan-status" role="status" aria-live="polite"></div>
+  <dialog id="dialogBantuan" class="panel-form" aria-labelledby="judulBantuan">
+    <div class="kepala-form"><div><h2 id="judulBantuan">Bantuan AiBot</h2><p>Panduan singkat untuk mengatur dashboard dan memakai bot di WhatsApp.</p></div><button id="tutupBantuan" type="button">Tutup</button></div>
+    <div class="bantuan-grid">
+      <section class="bantuan-bagian"><h3>1. Hubungkan WhatsApp</h3><ol>
+        <li>Jalankan <code>npm run dev</code>, lalu buka dashboard lokal.</li>
+        <li>Jika ada QR, pindai dari WhatsApp → Perangkat tertaut → Tautkan perangkat.</li>
+        <li>Ketik <code>!idgrup</code> di grup; ID grup muncul di terminal. Salin ke <code>WA_GROUP_ID</code> pada <code>.env</code>, lalu mulai ulang bot.</li>
+        <li>Untuk perintah admin, ketik <code>!myid</code> di grup target dan masukkan ID dari terminal ke <code>BOT_ADMIN_IDS</code> pada <code>.env</code>.</li>
+      </ol></section>
+      <section class="bantuan-bagian"><h3>2. Pengingat biasa</h3><ul>
+        <li>Klik <strong>Tambah pengingat</strong>; pilih hari, satu atau beberapa jam, lalu isi pesan.</li>
+        <li>Pakai <code>@all</code> atau <code>@semua</code> jika ingin menyebut seluruh anggota grup.</li>
+        <li>Gunakan toggle pada kartu untuk mengaktifkan satu pengingat. Toggle di atas halaman mengatur seluruh pengiriman.</li>
+        <li>Negara, kota, dan zona waktu diatur lewat tombol <strong>Pengaturan</strong> di kanan atas. Zona itu juga dipakai pengingat biasa.</li>
+      </ul></section>
+      <section class="bantuan-bagian"><h3>3. Pengingat shalat</h3><ul>
+        <li>Aktifkan toggle <strong>Jadwal shalat</strong>, lalu buka <strong>Detail &amp; edit pesan</strong>.</li>
+        <li>Pilih semua waktu atau beberapa dari Subuh sampai Isya. Isi pesan untuk waktu yang dipilih dan klik <strong>Simpan pesan</strong>.</li>
+        <li>Klik <strong>Cek jadwal hari ini</strong> untuk melihat jam sesuai lokasi.</li>
+        <li>AI mencoba memvariasikan pesan; jika AI tidak tersedia, teks yang tersimpan tetap digunakan.</li>
+      </ul></section>
+      <section class="bantuan-bagian"><h3>4. Perintah WhatsApp</h3><ul>
+        <li><code>!ai pertanyaan</code>, mention <code>@AiBot</code>, atau balas pesan bot untuk bertanya ke AI di grup target.</li>
+        <li><code>!schedule</code> melihat jadwal; <code>!status</code>, <code>!model</code>, dan <code>!memori</code> melihat status.</li>
+        <li><code>!help</code> menampilkan bantuan di chat pribadi atau grup.</li>
+        <li>Admin: <code>!daftarbot @AiBot</code>, <code>!reminder on/off</code>, <code>!testkirim</code>, dan <code>!resetai</code>.</li>
+      </ul></section>
+    </div>
+  </dialog>
   <dialog id="formPanel" class="panel-form" aria-labelledby="judulForm">
     <div class="kepala-form"><h2 id="judulForm">Tambah pengingat</h2><button id="tutupForm" type="button">Tutup</button></div>
     <form id="formPengingat">
@@ -527,6 +557,8 @@
     } catch (error) { showNotice(error.message, true); }
   });
   document.querySelector('#tambahPengingat').addEventListener('click', () => openForm());
+  document.querySelector('#bukaBantuan').addEventListener('click', () => document.querySelector('#dialogBantuan').showModal());
+  document.querySelector('#tutupBantuan').addEventListener('click', () => document.querySelector('#dialogBantuan').close());
   document.querySelector('#addReminderTime').addEventListener('click', () => {
     const currentTimes = document.querySelectorAll('.time-row').length;
     if (currentTimes >= 10) return showNotice('Maksimal 10 jam untuk satu reminder.', true);
