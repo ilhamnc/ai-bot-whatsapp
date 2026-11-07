@@ -69,6 +69,7 @@ AI_FALLBACK_MODELS=gpt-4o-mini
 | Perintah | Kegunaan |
 |---|---|
 | `!ai pertanyaan` atau `@AiBot pertanyaan` | Bertanya ke AI |
+| Balas pesan AiBot | Melanjutkan obrolan tanpa mention |
 | `!jadwal`, `!status`, `!model`, `!memori` | Melihat status bot dan semua jadwal reminder |
 | `!help` | Daftar perintah |
 | `!idgrup`, `!myid` | Menampilkan ID di terminal bot |

@@ -193,10 +193,10 @@ function isGreetingOnly(question) {
 
 export function selectMemberContext(history, senderKey, question, repliedMessage = false) {
   const allTurns = Array.isArray(history?.turns) ? history.turns : [];
-  if (isGreetingOnly(question)) return { mode: 'sapaan', turns: [], summary: '' };
   if (repliedMessage || questionNeedsGroupContext(question)) {
     return { mode: 'grup', turns: allTurns, summary: history?.summary || '' };
   }
+  if (isGreetingOnly(question)) return { mode: 'sapaan', turns: [], summary: '' };
   const filteredTurns = [];
   for (let index = 0; index + 1 < allTurns.length; index += 2) {
     const user = allTurns[index];
