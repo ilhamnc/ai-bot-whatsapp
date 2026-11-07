@@ -4,6 +4,7 @@
 !.env.example
 .state
 .wwebjs_auth
+.wa_auth
 .wwebjs_cache
 node_modules
 .vscode

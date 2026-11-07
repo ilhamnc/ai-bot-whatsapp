@@ -25,7 +25,7 @@ function syncSchedules() {
 }
 
 // Dashboard lokal secara default; hosting container bisa mengatur host dan login.
-const dashboardPort = Number(process.env.DASHBOARD_PORT || 3030);
+const dashboardPort = Number(process.env.PORT || process.env.DASHBOARD_PORT || 3030);
 const dashboardHost = process.env.DASHBOARD_HOST?.trim() || '127.0.0.1';
 const dashboardUser = process.env.DASHBOARD_USER?.trim() || '';
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || '';

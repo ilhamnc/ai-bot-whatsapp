@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,23 +25,12 @@ export const MAX_MODEL_PER_REQUEST = Math.max(1, Math.min(7, Number(process.env.
 
 // Default ini mempertahankan lokasi data dari versi sebelumnya.
 export const stateDir = path.resolve(process.env.BOT_STATE_DIR?.trim() || path.join(APP_DIR, '.state'));
-export const authDir = path.resolve(process.env.WA_AUTH_DIR?.trim() || path.join(APP_DIR, '.wwebjs_auth'));
+export const authDir = path.resolve(process.env.WA_AUTH_DIR?.trim() || path.join(APP_DIR, '.wa_auth'));
 export const stateFile = path.join(stateDir, 'reminder.json');
 export const remindersFile = path.join(stateDir, 'reminders.json');
 export const messageFile = path.join(APP_DIR, 'reminder.txt');
 export const aiMemoryFile = path.join(stateDir, 'ai-memory.json');
 export const botMentionIdsFile = path.join(stateDir, 'bot-mention-ids.json');
-
-const defaultWindowsChrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
-  (process.platform === 'win32' && fs.existsSync(defaultWindowsChrome) ? defaultWindowsChrome : '');
-export const puppeteerOptions = {
-  headless: true,
-  ...(chromePath ? { executablePath: chromePath } : {}),
-  ...(process.env.PUPPETEER_NO_SANDBOX === '1'
-    ? { args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] }
-    : {})
-};
 
 export function validateConfig() {
   if (!['gemini', 'openai'].includes(AI_PROVIDER)) {

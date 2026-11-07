@@ -1,9 +1,9 @@
 // Mengelola beberapa sesi WhatsApp tanpa menghapus sesi saat pengguna berpindah akun.
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import QRCode from 'qrcode';
-import whatsapp from 'whatsapp-web.js';
-import { authDir, puppeteerOptions } from '../config.js';
+import { authDir } from '../config.js';
 import {
   activateAccountProfile, addAccountProfile, getAccountProfiles, getActiveAccountId,
   markAccountUnlinked, rememberConnectedAccount, removeAccountProfile
@@ -11,8 +11,7 @@ import {
 import { clearExpiredMemories } from '../models/memoryModel.js';
 import { attachMessageRoutes } from '../routes/messageRoutes.js';
 import { stopReminderSchedules, syncReminderSchedules } from './reminderScheduler.js';
-
-const { Client, LocalAuth } = whatsapp;
+import { BaileysClient } from './baileysClient.js';
 
 export function createWhatsAppConnectionManager(onReady) {
   let client = null;
@@ -52,10 +51,12 @@ export function createWhatsAppConnectionManager(onReady) {
 
   function startActiveClient() {
     const accountId = getActiveAccountId();
-    const nextClient = new Client({
-      authStrategy: new LocalAuth({ clientId: accountId, dataPath: authDir }),
-      puppeteer: puppeteerOptions
-    });
+    // Profil dari whatsapp-web.js perlu QR baru; jangan tampilkan sebagai sesi tersimpan.
+    if (!existsSync(path.join(authDir, `baileys-${accountId}`, 'creds.json'))
+      && getAccountProfiles().some(account => account.id === accountId && account.linked)) {
+      markAccountUnlinked(accountId);
+    }
+    const nextClient = new BaileysClient(accountId, authDir);
     client = nextClient;
     status = 'connecting';
     qrDataUrl = null;
@@ -124,14 +125,16 @@ export function createWhatsAppConnectionManager(onReady) {
         else await oldClient.destroy();
       } catch (error) {
         console.warn('Logout WhatsApp perlu pembersihan sesi lokal:', error.message);
-        try { await oldClient.destroy(); } catch { /* Browser mungkin sudah tertutup. */ }
+        try { await oldClient.destroy(); } catch { /* Koneksi mungkin sudah tertutup. */ }
       }
     }
     // ID profil tervalidasi oleh model; tetap cek batas direktori sebelum menghapus sesi.
     const root = path.resolve(authDir);
-    const sessionPath = path.resolve(root, `session-${accountId}`);
-    if (!sessionPath.startsWith(`${root}${path.sep}`)) throw new Error('Path sesi WhatsApp tidak valid.');
-    await fs.rm(sessionPath, { recursive: true, force: true, maxRetries: 4 });
+    for (const prefix of ['baileys-', 'session-']) {
+      const sessionPath = path.resolve(root, `${prefix}${accountId}`);
+      if (!sessionPath.startsWith(`${root}${path.sep}`)) throw new Error('Path sesi WhatsApp tidak valid.');
+      await fs.rm(sessionPath, { recursive: true, force: true, maxRetries: 4 });
+    }
   }
 
   return {

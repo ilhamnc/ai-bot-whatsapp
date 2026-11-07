@@ -193,7 +193,7 @@ export function reminderText() {
 
 export function sendReminderWithAllTag(client, chatId, text) {
   if (!/@(?:semua|all)\b/i.test(text)) return client.sendMessage(chatId, text);
-  // whatsapp-web.js memakai nonJidMentions=1 untuk menyebut seluruh anggota.
+  // Adapter WhatsApp menerjemahkan penanda ini menjadi mention semua anggota.
   const body = text.replace(/@(?:semua|all)\b/gi, '@all');
   return client.sendMessage(chatId, body, { extra: { nonJidMentions: 1 } });
 }

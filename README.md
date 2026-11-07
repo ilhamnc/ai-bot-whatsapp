@@ -19,6 +19,7 @@ src/
     aiService.js                # Provider AI, fallback model, antrean, dan kuota
     reminderScheduler.js        # Cron job dinamis untuk setiap reminder
     whatsappConnectionService.js # Pemilihan dan penautan sesi WhatsApp
+    baileysClient.js          # Adapter pesan, QR, dan koneksi Baileys
   models/
     memoryModel.js              # Penyimpanan konteks dan ringkasan percakapan
     chatHistoryModel.js          # Arsip pesan grup dan pencarian konteks lama (SQLite)
@@ -29,7 +30,7 @@ src/
 reminder.txt                    # Teks lama untuk migrasi pengingat pertama
 ```
 
-Aplikasi menyediakan dashboard di `http://127.0.0.1:3030` saat bot berjalan. Dashboard hanya menerima koneksi lokal. Jika bot berjalan di server, gunakan SSH tunnel untuk membukanya dengan aman. Menu **Pengaturan** berisi **Set WA Bot**, **ID Grup Bot**, dan **Zona Waktu**.
+Aplikasi menyediakan dashboard di `http://127.0.0.1:3030` saat bot berjalan lokal. Pada hosting, Dockerfile membuka dashboard untuk koneksi luar dan mewajibkan `DASHBOARD_USER` serta `DASHBOARD_PASSWORD`. Menu **Pengaturan** berisi **Set WA Bot**, **ID Grup Bot**, dan **Zona Waktu**.
 
 Saat pertama kali dijalankan, isi `reminder.txt` dan jadwal lama Senin–Jumat pukul 14.30 WIB otomatis menjadi reminder default. Perubahan dashboard disimpan di `.state/reminders.json`; file lama `reminder.txt` tidak dihapus.
 
@@ -39,7 +40,7 @@ Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan 
 
 ## Menyiapkan bot
 
-1. Pasang Node.js 22.13 atau lebih baru dan Chrome/Chromium.
+1. Pasang Node.js 22.13 atau lebih baru.
 2. Jalankan `npm ci` di folder proyek.
 3. Salin `.env.example` menjadi `.env` dan atur `AI_PROVIDER`, `AI_API_KEY`, serta `AI_MODEL`.
 4. Jalankan `npm start`, buka dashboard, lalu masuk ke **Pengaturan → Set WA Bot** untuk memindai QR melalui WhatsApp > Perangkat tertaut > Tautkan perangkat.
@@ -94,7 +95,16 @@ Tuliskan `@all` atau `@semua` pada isi reminder untuk menyebut semua anggota. Pe
 
 ## Data dan deployment
 
-`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; arsip chat disimpan di `.state/chat-history.sqlite`; sesi akun yang masih tertaut disimpan di `.wwebjs_auth`. Simpan kedua direktori pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama. Untuk deployment, lihat [panduan Northflank](docs/deploy-northflank.md) atau [panduan OCI](docs/deploy-oci.md).
+`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; arsip chat disimpan di `.state/chat-history.sqlite`; sesi akun yang tertaut disimpan di `.wa_auth`. Simpan direktori state dan auth pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama.
 
-Bot menggunakan `whatsapp-web.js` yang bergantung pada WhatsApp Web. Pastikan proses bot selalu berjalan agar reminder terjadwal dapat dikirim.
+Bot memakai Baileys melalui WebSocket, tanpa Chrome. Jika sebelumnya memakai `whatsapp-web.js`, pindai ulang QR melalui menu **Set WA Bot**: format sesi lama tidak dapat dibaca Baileys. Folder `.wwebjs_auth` lama sengaja tidak dihapus agar masih bisa digunakan bila perlu kembali ke versi sebelumnya.
+
+### Railway
+
+1. Buat service dari repository GitHub ini dan pilih Dockerfile sebagai builder.
+2. Pasang volume persisten di `/data`, lalu isi `AI_API_KEY`, `DASHBOARD_USER`, dan `DASHBOARD_PASSWORD` pada Variables. Isi variabel AI lain sesuai provider yang dipakai. Jangan unggah `.env`.
+3. Buat domain publik untuk service, buka dashboard dengan login tadi, kemudian pindai QR di **Pengaturan → Set WA Bot**. Pilih grup dengan `!idgrup`.
+4. Pastikan volume menyimpan `/data/state` dan `/data/auth` agar login WhatsApp, pengaturan, dan arsip SQLite tetap ada setelah deploy ulang.
+
+Railway Free memiliki batas RAM, volume, dan kredit bulanan. Berjalan tanpa Chrome mengurangi pemakaian RAM, tetapi bot yang aktif terus menerus tetap dapat menghabiskan kredit gratis. Pantau metrik dan penggunaan kredit Railway; reminder hanya terkirim saat service berjalan. Arsip chat lengkap akan terus menambah isi volume.
 

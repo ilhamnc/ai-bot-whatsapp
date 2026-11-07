@@ -82,7 +82,7 @@ function removeBotTag(text) {
 async function getQuotedBotMessage(msg) {
   if (!msg.hasQuotedMsg && !msg?._data?.quotedMsg) return null;
   try {
-    // WhatsApp Web baru dapat mengirim id.$1, sedangkan getQuotedMessage() membaca id._serialized.
+    // Format ID pesan dari versi koneksi lama tetap didukung saat membaca kutipan.
     if (msg.id?.$1 && !msg.id._serialized) msg.id._serialized = msg.id.$1;
     const quotedMessage = await msg.getQuotedMessage();
     if (quotedMessage?.fromMe) return quotedMessage;
@@ -145,7 +145,13 @@ client.on("message", async msg => {
     const allowedAdminIds = new Set((process.env.BOT_ADMIN_IDS || '')
       .split(',').map(value => value.trim()).filter(Boolean));
     const senderId = (msg.author || '').trim();
-    const admin = Boolean(senderId && allowedAdminIds.has(senderId));
+    const senderAlt = (msg.authorAlt || '').trim();
+    // Baileys dapat memberi @lid sekaligus nomor @s.whatsapp.net; ID lama memakai @c.us.
+    const adminCandidates = [senderId, senderAlt].filter(Boolean);
+    const admin = adminCandidates.some(id => allowedAdminIds.has(id)
+      || (/^\d+@(c\.us|s\.whatsapp\.net)$/.test(id)
+        && [...allowedAdminIds].some(allowed => /^\d+@(c\.us|s\.whatsapp\.net)$/.test(allowed)
+          && allowed.split('@')[0] === id.split('@')[0])));
 
     // Hanya admin yang boleh mendaftarkan ID mention akun bot.
     if (/^!daftarbot(?:\s|$)/i.test(body)) {
@@ -163,6 +169,7 @@ client.on("message", async msg => {
     if (lower === '!myid') {
       // Hanya ditampilkan di CMD pribadi, tidak menyebarkan ID ke grup.
       console.log('ID PENGIRIM: ' + (senderId || '(tidak terdeteksi)'));
+      if (senderAlt) console.log('ID alternatif: ' + senderAlt);
       if (senderId) console.log('Untuk .env -> BOT_ADMIN_IDS=' + senderId);
       return msg.reply(senderId
         ? 'ID pengirim sudah ditampilkan di CMD tempat bot berjalan. Tambahkan ke BOT_ADMIN_IDS di file .env.'

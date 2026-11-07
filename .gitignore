@@ -3,6 +3,7 @@ node_modules/
 .env.*
 !.env.example
 .wwebjs_auth/
+.wa_auth/
 .wwebjs_cache/
 .state/
 .vscode/
