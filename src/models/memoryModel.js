@@ -9,7 +9,7 @@ import { readSecureJson, writeSecureJson } from '../services/encryptionService.j
 const MAX_MEMORY_PAIRS = 20;
 const MAX_MEMORY_CHARACTERS = 40000;
 const MEMORY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const MAX_SUMMARY_CHARACTERS = 2500;
+const MAX_SUMMARY_CHARACTERS = 1200;
 const MIN_PAIRS_TO_SUMMARIZE = 10;
 const MAX_SUMMARY_QUEUE_PAIRS = 12;
 const SUMMARY_QUEUE_CHAR_LIMIT = 24000;
@@ -65,7 +65,7 @@ function getGroupMemoryEntry(groupId) {
     // Bersihkan data ringan agar format memori sebelumnya tetap bisa digunakan.
     entry.turns = cleanTurns(entry.turns);
     entry.pending = cleanTurns(entry.pending);
-    entry.summary = typeof entry.summary === 'string' ? entry.summary : '';
+    entry.summary = typeof entry.summary === 'string' ? entry.summary.slice(0, MAX_SUMMARY_CHARACTERS) : '';
     return entry;
   }
   const newEntry = { updatedAt: Date.now(), summary: '', pending: [], turns: [] };
@@ -145,7 +145,7 @@ async function summarizeMemoryAutomatically(groupId) {
         + `RINGKASAN SEBELUMNYA:\n${summaryBefore || '(belum ada)'}\n\nPERCAPAKAN LAMA:\n${transcript}`,
       config: {
         thinkingConfig: { thinkingLevel: 'minimal' },
-        maxOutputTokens: 1100,
+        maxOutputTokens: 500,
         httpOptions: { timeout: 16000, retryOptions: { attempts: 1 } }
       }
     });

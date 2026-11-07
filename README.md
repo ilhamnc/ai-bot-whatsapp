@@ -107,5 +107,5 @@ Bot memakai Baileys melalui WebSocket, tanpa Chrome. Jika sebelumnya memakai `wh
 3. Buat domain publik untuk service, buka dashboard dengan login tadi, kemudian pindai QR di **Pengaturan → Set WA Bot**. Pilih grup dengan `!idgrup`.
 4. Pastikan volume menyimpan `/data/state` dan `/data/auth` agar login WhatsApp, pengaturan, dan arsip SQLite tetap ada setelah deploy ulang.
 
-Arsip chat tidak memiliki masa kedaluwarsa otomatis dan terus bertambah sampai dihapus dengan `!hapusriwayat`. Ini berbeda dari memori percakapan AI di `ai-memory.json`, yang menghapus konteks tidak aktif setelah 30 hari. Railway Free memiliki batas volume 0,5 GB; pantau pemakaian volumenya. Riwayat lengkap hanya merekam pesan baru di grup target saat bot berjalan.
+Arsip chat otomatis menghapus pesan yang lebih lama dari 21 hari dan menjalankan pembersihan saat bot mulai serta setiap hari. `!hapusriwayat` tetap dapat menghapus seluruh arsip grup lebih awal. Memori AI menyimpan paling banyak 20 pasangan percakapan dan ringkasan hingga 1.200 karakter; memori yang tidak aktif dihapus setelah 30 hari. Ringkasan hanya merangkum percakapan AI, bukan semua chat biasa. Railway Free memiliki batas volume 0,5 GB; pantau pemakaian volumenya. Riwayat hanya merekam pesan baru di grup target saat bot berjalan.
 

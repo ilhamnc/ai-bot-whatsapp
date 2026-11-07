@@ -6,11 +6,15 @@ import { DatabaseSync } from 'node:sqlite';
 import { stateDir } from '../config.js';
 import { createBlindIndex, createPrivateIdentifier, decryptText, encryptText, isEncrypted, tokenizeForSearch } from '../services/encryptionService.js';
 
+const CHAT_HISTORY_TTL_MS = 21 * 24 * 60 * 60 * 1000;
+const CHAT_HISTORY_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
 fs.mkdirSync(stateDir, { recursive: true });
 const database = new DatabaseSync(path.join(stateDir, 'chat-history.sqlite'));
 database.exec(`
   PRAGMA journal_mode = WAL;
   PRAGMA synchronous = NORMAL;
+  PRAGMA secure_delete = ON;
   CREATE TABLE IF NOT EXISTS chat_messages (
     id INTEGER PRIMARY KEY,
     message_id TEXT NOT NULL UNIQUE,
@@ -24,6 +28,8 @@ database.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_chat_messages_group_time
     ON chat_messages(group_id, sent_at DESC, id DESC);
+  CREATE INDEX IF NOT EXISTS idx_chat_messages_sent_at
+    ON chat_messages(sent_at);
   CREATE TABLE IF NOT EXISTS chat_message_terms (
     message_id TEXT NOT NULL,
     term_hash TEXT NOT NULL,
@@ -67,6 +73,11 @@ const deleteGroupTerms = database.prepare(`
   DELETE FROM chat_message_terms WHERE message_id IN
     (SELECT message_id FROM chat_messages WHERE group_id = ?)
 `);
+const deleteExpiredTerms = database.prepare(`
+  DELETE FROM chat_message_terms WHERE message_id IN
+    (SELECT message_id FROM chat_messages WHERE sent_at < ?)
+`);
+const deleteExpiredMessages = database.prepare('DELETE FROM chat_messages WHERE sent_at < ?');
 const searchMessagesByTerms = database.prepare(`
   SELECT m.message_id, m.sender_key, m.sender_name, m.content, m.from_bot, m.sent_at,
     COUNT(DISTINCT t.term_hash) AS match_score
@@ -77,6 +88,30 @@ const searchMessagesByTerms = database.prepare(`
   ORDER BY match_score DESC, m.sent_at DESC, m.id DESC
   LIMIT 300
 `);
+
+// Hapus isi lama secara fisik dari database berkala, bukan hanya menyembunyikannya dari pencarian.
+export function pruneExpiredChatHistory(now = Date.now()) {
+  const cutoff = now - CHAT_HISTORY_TTL_MS;
+  database.exec('BEGIN IMMEDIATE');
+  let deleted = 0;
+  try {
+    deleteExpiredTerms.run(cutoff);
+    deleted = Number(deleteExpiredMessages.run(cutoff).changes || 0);
+    database.exec('COMMIT');
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
+  if (deleted) database.exec('PRAGMA wal_checkpoint(TRUNCATE); VACUUM;');
+  return deleted;
+}
+
+pruneExpiredChatHistory();
+const historyCleanupTimer = setInterval(() => {
+  try { pruneExpiredChatHistory(); }
+  catch { console.error('[ARSIP] Pembersihan otomatis tertunda.'); }
+}, CHAT_HISTORY_CLEANUP_INTERVAL_MS);
+historyCleanupTimer.unref();
 
 const STOP_WORDS = new Set([
   'yang', 'dan', 'atau', 'dari', 'untuk', 'dengan', 'dalam', 'pada', 'buat', 'kalau',
@@ -215,5 +250,8 @@ export function clearGroupChatHistory(groupId) {
 }
 
 export function closeChatHistoryDatabase() {
+  clearInterval(historyCleanupTimer);
   database.close();
 }
+
+export { CHAT_HISTORY_TTL_MS };
