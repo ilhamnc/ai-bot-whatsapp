@@ -58,13 +58,16 @@ function removeBotTag(text) {
 async function getQuotedBotMessage(msg) {
   if (!msg.hasQuotedMsg && !msg?._data?.quotedMsg) return null;
   try {
+    // WhatsApp Web baru dapat mengirim id.$1, sedangkan getQuotedMessage() membaca id._serialized.
+    if (msg.id?.$1 && !msg.id._serialized) msg.id._serialized = msg.id.$1;
     const quotedMessage = await msg.getQuotedMessage();
     if (quotedMessage?.fromMe) return quotedMessage;
   } catch (error) {
     console.warn('[BALASAN] Pesan yang dikutip tidak dapat dibaca:', error.message);
   }
   const quotedData = msg?._data?.quotedMsg;
-  return quotedData?.id?.fromMe ? { body: quotedData.body || '' } : null;
+  const quotedFromBot = quotedData?.id?.fromMe === true || quotedData?.fromMe === true;
+  return quotedFromBot ? { body: quotedData.body || quotedData.caption || '' } : null;
 }
 
 export function registerMessageRoutes(client, getIsReady) {
