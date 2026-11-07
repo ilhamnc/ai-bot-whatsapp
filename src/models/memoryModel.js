@@ -184,7 +184,7 @@ export function getSenderKey(msg) {
 }
 
 function questionNeedsGroupContext(question) {
-  return /\b(tadi|barusan|sebelumnya|kemarin|lanjut(?:in|kan)?|kelanjutannya|yang dibahas|obrolan|percakapan|cerita tadi|topik tadi|siapa yang bilang|kata (?:dia|kalian)|di grup|dari atas)\b/i.test(question);
+  return /\b(tadi|barusan|sebelumnya|kemarin|waktu itu|lanjut(?:in|kan)?|kelanjutannya|yang dibahas|obrolan|percakapan|cerita tadi|topik tadi|siapa yang bilang|kata (?:dia|kalian)|di grup|dari atas|keputusan|disepakati|rencana(?:nya)?|kesimpulan|hasil rapat|hasil diskusi|pembagian tugas)\b/i.test(question);
 }
 
 function isGreetingOnly(question) {
@@ -194,7 +194,8 @@ function isGreetingOnly(question) {
 export function selectMemberContext(history, senderKey, question, repliedMessage = false) {
   const allTurns = Array.isArray(history?.turns) ? history.turns : [];
   if (repliedMessage || questionNeedsGroupContext(question)) {
-    return { mode: 'grup', turns: allTurns, summary: history?.summary || '' };
+    // Arsip SQLite mencari chat relevan yang lebih lama; batasi memori AI agar prompt tetap hemat.
+    return { mode: 'grup', turns: allTurns.slice(-12), summary: history?.summary || '' };
   }
   if (isGreetingOnly(question)) return { mode: 'sapaan', turns: [], summary: '' };
   const filteredTurns = [];

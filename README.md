@@ -21,6 +21,7 @@ src/
     whatsappConnectionService.js # Pemilihan dan penautan sesi WhatsApp
   models/
     memoryModel.js              # Penyimpanan konteks dan ringkasan percakapan
+    chatHistoryModel.js          # Arsip pesan grup dan pencarian konteks lama (SQLite)
     reminderModel.js            # Data reminder dan pengiriman pesan
     botSettingsModel.js         # Riwayat akun dan grup target
   views/
@@ -38,7 +39,7 @@ Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan 
 
 ## Menyiapkan bot
 
-1. Pasang Node.js 22 atau lebih baru dan Chrome/Chromium.
+1. Pasang Node.js 22.13 atau lebih baru dan Chrome/Chromium.
 2. Jalankan `npm ci` di folder proyek.
 3. Salin `.env.example` menjadi `.env` dan atur `AI_PROVIDER`, `AI_API_KEY`, serta `AI_MODEL`.
 4. Jalankan `npm start`, buka dashboard, lalu masuk ke **Pengaturan → Set WA Bot** untuk memindai QR melalui WhatsApp > Perangkat tertaut > Tautkan perangkat.
@@ -46,6 +47,9 @@ Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan 
 6. Kirim `!myid`. Masukkan ID dari terminal ke `BOT_ADMIN_IDS`, lalu mulai ulang bot.
 
 Saat mengembangkan kode, jalankan `npm run dev`. Nodemon akan memulai ulang bot ketika file program atau `.env` disimpan. Pengaturan pemantauan berada di `package.json` dan mengabaikan data sesi serta `.state` agar perubahan data runtime tidak memicu restart.
+
+AiBot menyimpan pesan teks dan caption di grup target ke `.state/chat-history.sqlite`, termasuk pesan anggota dan balasan bot. File media aslinya tidak disimpan. Arsip mulai terisi setelah bot berjalan dengan grup target terpilih; pesan lama sebelum itu tidak otomatis diimpor. Pertanyaan yang merujuk obrolan grup memakai beberapa pesan terbaru dan pesan lama yang cocok dengan kata kunci, dengan konteks arsip tambahan dibatasi sekitar 5.000 karakter. Penyimpanan tidak memanggil AI; konteks arsip hanya menambah token ketika dipakai dalam pertanyaan. Perintah admin `!hapusriwayat` menghapus arsip untuk grup aktif.
+AiBot menyimpan pesan teks dan caption di grup target ke `.state/chat-history.sqlite`, termasuk pesan anggota dan balasan bot. File media aslinya tidak disimpan. Arsip mulai terisi setelah bot berjalan dengan grup target terpilih; pesan lama sebelum itu tidak otomatis diimpor. Pertanyaan yang merujuk obrolan grup memakai beberapa pesan terbaru dan pesan lama yang cocok dengan kata kunci, dengan konteks arsip tambahan dibatasi sekitar 5.000 karakter. Penyimpanan tidak memanggil AI; konteks arsip hanya menambah token ketika dipakai dalam pertanyaan. Perintah admin `!hapusriwayat` menghapus arsip untuk grup aktif; `!resetai` hanya membersihkan memori percakapan AI.
 
 Menu **Set WA Bot** menampilkan riwayat nomor. Tombol × pada satu akun menghapus profil dan sesi lokalnya; untuk akun aktif bot juga mencoba keluar dari WhatsApp. Jika akun lama yang tidak aktif masih tercantum pada **Perangkat tertaut** di ponsel, lepaskan dari aplikasi WhatsApp. Menu **ID Grup Bot** menampilkan nama grup bila WhatsApp menyediakannya, serta menerima ID manual berbentuk `120363...@g.us`. ID tersebut berasal dari WhatsApp dan dapat dilihat lewat balasan `!idgrup`; bot harus menjadi anggota grup agar dapat mengirim pesan.
 
@@ -83,13 +87,14 @@ AI_FALLBACK_MODELS=gpt-4o-mini
 | `!reminder on` / `!reminder off` | Mengubah status reminder; operator saja |
 | `!testreminder` / `!testkirim` | Mengirim reminder uji dengan @all; operator saja |
 | `!resetai` | Mengosongkan memori AI; operator saja |
+| `!hapusriwayat` | Menghapus arsip teks grup aktif; operator saja |
 | `!daftarbot @AiBot` | Mengaktifkan mention bot; operator saja |
 
 Tuliskan `@all` atau `@semua` pada isi reminder untuk menyebut semua anggota. Perintah uji mengirim reminder aktif pertama sungguhan ke grup terpilih.
 
 ## Data dan deployment
 
-`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; sesi akun yang masih tertaut disimpan di `.wwebjs_auth`. Simpan kedua direktori pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama. Untuk deployment OCI, lihat [panduan deploy](docs/deploy-oci.md).
+`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; arsip chat disimpan di `.state/chat-history.sqlite`; sesi akun yang masih tertaut disimpan di `.wwebjs_auth`. Simpan kedua direktori pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama. Untuk deployment OCI, lihat [panduan deploy](docs/deploy-oci.md).
 
 Bot menggunakan `whatsapp-web.js` yang bergantung pada WhatsApp Web. Pastikan proses bot selalu berjalan agar reminder terjadwal dapat dikirim.
 

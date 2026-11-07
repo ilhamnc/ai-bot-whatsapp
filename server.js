@@ -2,6 +2,7 @@
 import cron from 'node-cron';
 import { REMINDER_CRON, AI_MODELS, AI_PROVIDER, validateConfig } from './src/config.js';
 import { getTargetGroup } from './src/models/botSettingsModel.js';
+import { closeChatHistoryDatabase } from './src/models/chatHistoryModel.js';
 import { getPrayerReminderSettings, getReminders } from './src/models/reminderModel.js';
 import { AI_PROVIDER_NAME } from './src/services/aiService.js';
 import { syncReminderSchedules } from './src/services/reminderScheduler.js';
@@ -40,6 +41,7 @@ async function shutdown(signal) {
   isStopping = true;
   console.log(`Menghentikan bot (${signal})...`);
   try { await connectionManager.stop(); } catch (error) { console.warn('Gagal menutup WhatsApp:', error.message); }
+  try { closeChatHistoryDatabase(); } catch (error) { console.warn('Gagal menutup arsip chat:', error.message); }
   dashboardServer.close(() => process.exit(0));
 }
 process.once('SIGINT', () => { void shutdown('SIGINT'); });

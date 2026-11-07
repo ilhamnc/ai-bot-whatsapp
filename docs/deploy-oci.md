@@ -4,7 +4,7 @@ Panduan ini untuk VM **Ubuntu ARM64** pada shape `VM.Standard.A1.Flex` berlabel 
 
 ## 1. Siapkan VM
 
-Masuk ke VM lewat SSH sebagai pengguna biasa, lalu pasang **Node.js 22 atau lebih baru** dan Git. Ikuti petunjuk instalasi Node.js untuk Ubuntu pada [nodejs.org](https://nodejs.org/en/download). Verifikasi dengan `node --version` dan `npm --version`.
+Masuk ke VM lewat SSH sebagai pengguna biasa, lalu pasang **Node.js 22.13 atau lebih baru** dan Git. Versi ini menyediakan modul SQLite bawaan yang dipakai arsip chat. Ikuti petunjuk instalasi Node.js untuk Ubuntu pada [nodejs.org](https://nodejs.org/en/download). Verifikasi dengan `node --version` dan `npm --version`.
 
 Pada Ubuntu, Chromium tersedia sebagai Snap:
 
@@ -36,7 +36,7 @@ WA_AUTH_DIR=/home/ubuntu/bot-data/auth
 PUPPETEER_EXECUTABLE_PATH=/snap/bin/chromium
 ```
 
-Ganti `/home/ubuntu` bila nama pengguna atau home VM berbeda. **Kedua direktori data harus tetap ada saat kode diperbarui**: `state` menyimpan status dan memori, `auth` menyimpan sesi WhatsApp. Jangan menaruhnya dalam Git.
+Ganti `/home/ubuntu` bila nama pengguna atau home VM berbeda. **Kedua direktori data harus tetap ada saat kode diperbarui**: `state` menyimpan status, memori, dan database arsip `chat-history.sqlite`; `auth` menyimpan sesi WhatsApp. Jangan menaruhnya dalam Git. Cadangkan direktori `state` secara berkala.
 
 Jalankan `npm start`. Di komputer pribadi, buka SSH tunnel dengan `ssh -L 3030:127.0.0.1:3030 ubuntu@IP_VM`, lalu buka `http://127.0.0.1:3030`. Masuk ke **Pengaturan → Set WA Bot** dan pindai QR. Kirim `!idgrup` di grup; grup otomatis menjadi target dan dapat dikunci lewat **Pengaturan → ID Grup Bot**. Setelah itu kirim `!myid`, isi `BOT_ADMIN_IDS`, dan restart bot. Jika Chromium menolak sandbox pada VM, tambahkan `PUPPETEER_NO_SANDBOX=1` ke `.env` dan jalankan ulang.
 
