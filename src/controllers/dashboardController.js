@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { TZ } from '../config.js';
 import {
-  createReminder, deleteReminder, getReminders, saveState,
+  createReminder, deleteReminder, getPrayerReminderSettings, getReminders, savePrayerReminderSettings, saveState,
   state, updateReminder
 } from '../models/reminderModel.js';
+import { previewPrayerTimes } from '../services/prayerReminderService.js';
 
 const viewPath = fileURLToPath(new URL('../views/reminders.html', import.meta.url));
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -36,6 +37,33 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
       globallyEnabled: state.enabled,
       reminders: getReminders()
     });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/prayer-reminder') {
+    return respond(response, 200, { settings: getPrayerReminderSettings() });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/prayer-reminder/preview') {
+    try {
+      const settings = {
+        ...getPrayerReminderSettings(),
+        city: url.searchParams.get('city') || '',
+        country: url.searchParams.get('country') || '',
+        timezone: url.searchParams.get('timezone') || ''
+      };
+      const preview = await previewPrayerTimes(settings);
+      if (!preview) return respond(response, 502, { error: 'Jadwal belum bisa diambil. Cek ejaan kota dan koneksi internet.' });
+      return respond(response, 200, preview);
+    } catch (error) {
+      return respond(response, 400, { error: error.message });
+    }
+  }
+  if (request.method === 'PUT' && url.pathname === '/api/prayer-reminder') {
+    try {
+      const settings = savePrayerReminderSettings(await readJson(request));
+      syncSchedules();
+      return respond(response, 200, { settings });
+    } catch (error) {
+      return respond(response, 400, { error: error.message });
+    }
   }
   if (request.method === 'GET' && url.pathname === '/api/connection') {
     const connectionInfo = getConnectionInfo?.() || { status: 'connecting', qrDataUrl: null };

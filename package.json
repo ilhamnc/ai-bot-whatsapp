@@ -7,7 +7,7 @@
     "scripts": {
         "start": "node server.js",
         "dev": "nodemon --signal SIGTERM server.js",
-        "check": "node --check server.js && node --check bot.js && node --check src/config.js && node --check src/controllers/messageController.js && node --check src/controllers/dashboardController.js && node --check src/routes/messageRoutes.js && node --check src/routes/dashboardRoutes.js && node --check src/models/reminderModel.js && node --check src/models/memoryModel.js && node --check src/services/aiService.js && node --check src/services/reminderScheduler.js"
+        "check": "node --check server.js && node --check bot.js && node --check src/config.js && node --check src/controllers/messageController.js && node --check src/controllers/dashboardController.js && node --check src/routes/messageRoutes.js && node --check src/routes/dashboardRoutes.js && node --check src/models/reminderModel.js && node --check src/models/memoryModel.js && node --check src/services/aiService.js && node --check src/services/reminderScheduler.js && node --check src/services/prayerReminderService.js"
     },
     "engines": {
         "node": ">=22"

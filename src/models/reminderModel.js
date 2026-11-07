@@ -11,9 +11,9 @@ const MAX_DAILY_TIMES = 10;
 
 function loadState() {
   try {
-    return { enabled: true, lastDateSent: null, ...JSON.parse(fs.readFileSync(stateFile, 'utf8')) };
+    return { enabled: true, lastDateSent: null, prayerReminder: null, ...JSON.parse(fs.readFileSync(stateFile, 'utf8')) };
   } catch {
-    return { enabled: true, lastDateSent: null };
+    return { enabled: true, lastDateSent: null, prayerReminder: null };
   }
 }
 
@@ -22,6 +22,76 @@ export const state = loadState();
 export function saveState() {
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf8');
+}
+
+const DEFAULT_PRAYER_MESSAGES = {
+  Fajr: 'Subuh dulu, yuk. Semoga hari ini lancar dan penuh berkah 🤲',
+  Dhuhr: 'Waktunya Dzuhur, rehat sebentar buat salat ya 🤲',
+  Asr: 'Jangan kelewat Asar ya, sempatkan salat dulu ✨',
+  Maghrib: 'Maghrib sudah masuk, yuk salat dulu 🌅',
+  Isha: 'Yuk tutup hari dengan salat Isya. Semoga istirahatmu nyaman 🤲'
+};
+
+function getPrayerSettings() {
+  const saved = state.prayerReminder || {};
+  return {
+    enabled: saved.enabled === true,
+    city: String(saved.city || 'Jakarta'),
+    country: String(saved.country || 'Indonesia'),
+    timezone: String(saved.timezone || 'Asia/Jakarta'),
+    messages: { ...DEFAULT_PRAYER_MESSAGES, ...(saved.messages || {}) },
+    sent: saved.sent && typeof saved.sent === 'object' ? saved.sent : {}
+  };
+}
+
+export function getPrayerReminderSettings() {
+  const { sent, ...settings } = getPrayerSettings();
+  return { ...settings, messages: { ...settings.messages } };
+}
+
+export function savePrayerReminderSettings(input) {
+  const city = String(input?.city || '').trim();
+  const country = String(input?.country || '').trim();
+  const timezone = String(input?.timezone || '').trim();
+  const messages = {};
+  if (!city || city.length > 100 || !country || country.length > 100) {
+    throw new Error('Nama kota dan negara wajib diisi (maksimal 100 karakter).');
+  }
+  try { new Intl.DateTimeFormat('id-ID', { timeZone: timezone }); }
+  catch { throw new Error('Zona waktu tidak valid. Contoh: Asia/Jakarta.'); }
+  for (const prayer of Object.keys(DEFAULT_PRAYER_MESSAGES)) {
+    const message = String(input?.messages?.[prayer] || '').trim();
+    if (!message || message.length > MAX_TEXT) throw new Error(`Pesan ${prayer} harus diisi (maksimal ${MAX_TEXT} karakter).`);
+    messages[prayer] = message;
+  }
+  const current = getPrayerSettings();
+  state.prayerReminder = {
+    enabled: input.enabled === true,
+    city,
+    country,
+    timezone,
+    messages,
+    // Pengaturan lokasi baru perlu mengirim ulang jadwal hari ini.
+    sent: current.city === city && current.country === country && current.timezone === timezone ? current.sent : {}
+  };
+  saveState();
+  return getPrayerReminderSettings();
+}
+
+export function prayerReminderAlreadySent(key) {
+  return Boolean(getPrayerSettings().sent[key]);
+}
+
+export function markPrayerReminderSent(key) {
+  const settings = getPrayerSettings();
+  settings.sent[key] = new Date().toISOString();
+  // Simpan penanda hari ini dan kemarin saja agar berkas status tetap ringkas.
+  const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+  for (const [sentKey, timestamp] of Object.entries(settings.sent)) {
+    if (Date.parse(timestamp) < cutoff) delete settings.sent[sentKey];
+  }
+  state.prayerReminder = settings;
+  saveState();
 }
 
 // Jika belum ada data baru, isi berkas lama dipakai sebagai reminder pertama.

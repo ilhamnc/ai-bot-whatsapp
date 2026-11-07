@@ -32,6 +32,8 @@ Saat pertama kali dijalankan, isi `reminder.txt` dan jadwal lama Senin–Jumat p
 
 Dashboard dapat menambah, mengedit, mengaktifkan/nonaktifkan, dan menghapus reminder. Setiap reminder mempunyai jadwal cron dan isi pesan sendiri. Zona waktunya `Asia/Jakarta`. Contoh cron: `30 14 * * 1-5` berarti Senin–Jumat pukul 14.30.
 
+Pengingat shalat memiliki sakelar terpisah di dashboard. Isi kota/kabupaten, negara, dan zona waktu IANA (contoh `Asia/Jakarta`), lalu simpan. Waktu Subuh, Dzuhur, Asar, Maghrib, dan Isya diambil setiap hari dari API AlAdhan dengan metode perhitungan Kementerian Agama RI (metode 20); periksa hasil hari ini melalui tombol pratinjau. Setiap waktu punya teks sendiri dan AI mencoba memparafrasekan teks secara singkat. Jika AI gagal atau kuota habis, pesan bawaan tetap dikirim. Koneksi internet diperlukan untuk mengambil jadwal harian.
+
 ## Menyiapkan bot
 
 1. Pasang Node.js 22 atau lebih baru dan Chrome/Chromium.

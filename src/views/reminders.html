@@ -23,7 +23,8 @@
     .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; margin:0; min-width:104px; } .switch input { position:absolute; width:1px; height:1px; opacity:0; } .switch-track { width:48px; height:28px; border:1px solid #59645b; border-radius:999px; background:#303633; transition:background .18s,border-color .18s; } .switch-track::before { content:''; display:block; width:20px; height:20px; margin:3px; border-radius:50%; background:#d3dbd4; transition:transform .18s,background .18s; } .switch input:checked + .switch-track { background:#397748; border-color:#65a775; } .switch input:checked + .switch-track::before { transform:translateX(20px); background:#fff; } .switch input:focus-visible + .switch-track { outline:2px solid var(--teks); outline-offset:3px; } .switch-label { color:var(--redup); font-size:13px; }
     .bantuan { margin-top:4px; font-size:12px; color:var(--redup) } .kosong { text-align:center; padding:20px; color:var(--redup); border:1px dashed var(--garis); border-radius:14px }
     .times-list { display:flex; flex-wrap:wrap; gap:7px; } .time-row { display:flex; align-items:center; gap:5px; width:calc(50% - 4px); min-width:140px; } .time-row input { flex:1; width:auto; min-width:0; } .time-row button { padding:5px 9px; }
-    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
+    .shalat-panel { margin-top:14px } .shalat-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; } .shalat-head p { font-size:13px; } .shalat-fields { margin-top:14px; } .shalat-messages { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; margin-top:12px; } .shalat-message textarea { min-height:58px; } .shalat-result { margin-top:10px; padding:8px 10px; border-radius:9px; background:#111512; border:1px solid #262e28; font-size:13px; color:var(--redup); } .shalat-result[hidden],.shalat-fields[hidden] { display:none; }
+    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom,.shalat-messages { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
 <body>
@@ -62,6 +63,30 @@
       <div class="daftar-tombol"><button class="utama" type="submit">Simpan pengingat</button><button id="batalForm" type="button">Batal</button></div>
     </form>
   </section>
+  <section class="panel-form shalat-panel" aria-labelledby="judulShalat">
+    <div class="shalat-head">
+      <div><h2 id="judulShalat">Jadwal shalat</h2><p>Waktu harian menyesuaikan kota. Menggunakan perhitungan Kemenag RI.</p></div>
+      <label class="switch"><input id="shalatAktif" type="checkbox" aria-label="Aktifkan pengingat jadwal shalat"><span class="switch-track"></span><span id="shalatStatus" class="switch-label">Jadwal shalat: Nonaktif</span></label>
+    </div>
+    <div id="shalatFields" class="shalat-fields">
+      <div class="kolom">
+        <div class="kolom-field"><label for="shalatKota">Kota/kabupaten</label><input id="shalatKota" type="text" maxlength="100" required placeholder="Contoh: Jakarta"></div>
+        <div class="kolom-field"><label for="shalatNegara">Negara</label><input id="shalatNegara" type="text" maxlength="100" required placeholder="Contoh: Indonesia"></div>
+        <div class="kolom-field"><label for="shalatZona">Zona waktu</label><input id="shalatZona" type="text" maxlength="80" required placeholder="Asia/Jakarta"></div>
+        <div class="kolom-field"><label>&nbsp;</label><button id="cekJadwalShalat" type="button">Cek jadwal hari ini</button></div>
+      </div>
+      <div id="pratinjauShalat" class="shalat-result" aria-live="polite" hidden></div>
+      <div class="bantuan">AI akan memparafrasekan pesan dengan gaya santai dan singkat. Jika AI atau kuota tidak tersedia, teks yang kamu isi tetap dikirim.</div>
+      <div class="shalat-messages">
+        <div class="shalat-message"><label for="pesanSubuh">Subuh</label><textarea id="pesanSubuh" maxlength="10000" required></textarea></div>
+        <div class="shalat-message"><label for="pesanDzuhur">Dzuhur</label><textarea id="pesanDzuhur" maxlength="10000" required></textarea></div>
+        <div class="shalat-message"><label for="pesanAsar">Asar</label><textarea id="pesanAsar" maxlength="10000" required></textarea></div>
+        <div class="shalat-message"><label for="pesanMaghrib">Maghrib</label><textarea id="pesanMaghrib" maxlength="10000" required></textarea></div>
+        <div class="shalat-message"><label for="pesanIsya">Isya</label><textarea id="pesanIsya" maxlength="10000" required></textarea></div>
+      </div>
+      <div class="daftar-tombol"><button id="simpanShalat" class="utama" type="button">Simpan jadwal shalat</button></div>
+    </div>
+  </section>
   <section id="reminders" aria-live="polite"></section>
 </main>
 <script>
@@ -73,6 +98,7 @@
   const reminderDayInputs = [...document.querySelectorAll('input[name="reminderDay"]')];
   const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   let reminders = [];
+  let prayerSettings = null;
   let editingReminderId = null;
   let hasUnconvertedCustomSchedule = false;
   let noticeTimer;
@@ -228,6 +254,59 @@
     } catch (error) { showNotice(error.message, true); }
   }
 
+  const prayerMessageFields = { Fajr: '#pesanSubuh', Dhuhr: '#pesanDzuhur', Asr: '#pesanAsar', Maghrib: '#pesanMaghrib', Isha: '#pesanIsya' };
+
+  function readPrayerForm() {
+    return {
+      enabled: document.querySelector('#shalatAktif').checked,
+      city: document.querySelector('#shalatKota').value.trim(),
+      country: document.querySelector('#shalatNegara').value.trim(),
+      timezone: document.querySelector('#shalatZona').value.trim(),
+      messages: Object.fromEntries(Object.entries(prayerMessageFields).map(([key, selector]) => [key, document.querySelector(selector).value]))
+    };
+  }
+
+  async function savePrayerSettings() {
+    try {
+      const result = await callApi('/api/prayer-reminder', { method: 'PUT', body: JSON.stringify(readPrayerForm()) });
+      prayerSettings = result.settings;
+      showNotice('Pengaturan jadwal shalat tersimpan.');
+    } catch (error) { showNotice(error.message, true); }
+  }
+
+  async function loadPrayerSettings() {
+    try {
+      const { settings } = await callApi('/api/prayer-reminder');
+      prayerSettings = settings;
+      document.querySelector('#shalatAktif').checked = settings.enabled;
+      document.querySelector('#shalatStatus').textContent = `Jadwal shalat: ${settings.enabled ? 'Aktif' : 'Nonaktif'}`;
+      document.querySelector('#shalatKota').value = settings.city;
+      document.querySelector('#shalatNegara').value = settings.country;
+      document.querySelector('#shalatZona').value = settings.timezone;
+      for (const [key, selector] of Object.entries(prayerMessageFields)) document.querySelector(selector).value = settings.messages[key] || '';
+    } catch (error) { showNotice(error.message, true); }
+  }
+
+  async function showPrayerPreview() {
+    const form = readPrayerForm();
+    const query = new URLSearchParams({ city: form.city, country: form.country, timezone: form.timezone });
+    const previewElement = document.querySelector('#pratinjauShalat');
+    previewElement.hidden = false;
+    previewElement.textContent = 'Mengambil jadwal shalat hari ini...';
+    try {
+      const data = await callApi(`/api/prayer-reminder/preview?${query}`);
+      const labels = { Fajr: 'Subuh', Dhuhr: 'Dzuhur', Asr: 'Asar', Maghrib: 'Maghrib', Isha: 'Isya' };
+      previewElement.textContent = `${data.date} · ${data.timezone} · ${Object.entries(data.timings).map(([key, time]) => `${labels[key]} ${time}`).join(' · ')}`;
+    } catch (error) { previewElement.textContent = error.message; }
+  }
+
+  document.querySelector('#shalatAktif').addEventListener('change', event => {
+    document.querySelector('#shalatStatus').textContent = `Jadwal shalat: ${event.target.checked ? 'Aktif' : 'Nonaktif'}`;
+    if (!event.target.checked) void savePrayerSettings();
+  });
+  document.querySelector('#simpanShalat').addEventListener('click', () => void savePrayerSettings());
+  document.querySelector('#cekJadwalShalat').addEventListener('click', () => void showPrayerPreview());
+
   // Periksa status koneksi berkala supaya QR terbaru langsung terlihat di halaman.
   async function loadConnectionStatus() {
     try {
@@ -331,6 +410,7 @@
     }
   });
   void loadReminders();
+  void loadPrayerSettings();
   void loadConnectionStatus();
   setInterval(() => { void loadConnectionStatus(); }, 2000);
 </script>
