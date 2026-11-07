@@ -27,6 +27,7 @@
     .shalat-panel { margin-top:14px } .shalat-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; } .shalat-head p { font-size:13px; } .shalat-head .daftar-tombol { margin:0; } .shalat-messages { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; margin-top:12px; } .shalat-message textarea { min-height:58px; } .shalat-result { margin-top:10px; padding:8px 10px; border-radius:9px; background:#111512; border:1px solid #262e28; font-size:13px; color:var(--redup); } .info-pengaturan { color:var(--redup); font-size:13px; } .bilah-atas #bukaPengaturanLokasi { margin-left:auto; }
     .shalat-pilihan-baris { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; } .shalat-pilihan-baris .hari-pilihan { flex:1; } .shalat-pilihan-baris button { flex-shrink:0; }
     .aksi-header { display:flex; gap:8px; flex-wrap:wrap; } .bantuan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .bantuan-bagian { background:#111512; border:1px solid var(--garis); border-radius:12px; padding:14px; } .bantuan-bagian h3 { margin:0 0 8px; font-size:16px; } .bantuan-bagian ul,.bantuan-bagian ol { margin:0; padding-left:20px; } .bantuan-bagian li { margin:6px 0; } .bantuan-bagian code { color:var(--hijau); overflow-wrap:anywhere; }
+    .menu-pengaturan { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; } .menu-pengaturan button.terpilih { background:var(--hijau); border-color:var(--hijau); color:#102016; font-weight:700; } .pengaturan-bagian[hidden] { display:none; } .pengaturan-bagian h3 { margin:0 0 8px; } .pengaturan-bagian p { margin-bottom:12px; } .pengaturan-bagian .daftar-tombol { flex-wrap:wrap; } .status-pengaturan { min-height:22px; color:var(--hijau); margin-bottom:8px; } .status-pengaturan.galat { color:var(--merah); }
     @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom,.shalat-messages,.bantuan-grid { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
@@ -34,31 +35,50 @@
 <main>
   <header>
     <div><h1>Pengingat AiBot</h1><p>Atur beberapa pesan terjadwal untuk grup WhatsApp.</p></div>
-    <div class="aksi-header"><button id="bukaBantuan" type="button">Bantuan</button><button id="tambahPengingat" class="utama" type="button">＋ Tambah pengingat</button></div>
+    <div class="aksi-header"><button id="bukaBantuan" type="button">Bantuan</button><button id="bukaPengaturanLokasi" type="button">Pengaturan</button><button id="tambahPengingat" class="utama" type="button">＋ Tambah pengingat</button></div>
   </header>
-  <section class="panel-form koneksi" aria-live="polite">
-    <img id="connectionQr" alt="Kode QR untuk menghubungkan WhatsApp" hidden>
-    <div class="koneksi-info"><h2>Status WhatsApp</h2><p id="connectionStatus">Menunggu status koneksi...</p><p id="connectionInstructions" class="bantuan"></p></div>
-  </section>
   <section class="bilah-atas">
     <label class="options"><input id="statusGlobal" type="checkbox"><span>Pengiriman pengingat diaktifkan</span></label>
-    <button id="bukaPengaturanLokasi" type="button" class="info-pengaturan">📍 Jakarta, Indonesia · Asia/Jakarta · Pengaturan</button>
   </section>
   <div id="pesanStatus" class="pesan-status" role="status" aria-live="polite"></div>
+  <dialog id="dialogPengaturan" class="panel-form" aria-labelledby="judulPengaturan">
+    <div class="kepala-form"><div><h2 id="judulPengaturan">Pengaturan AiBot</h2><p>Kelola nomor WhatsApp, grup target, dan zona waktu.</p></div><button id="tutupPengaturan" type="button">Tutup</button></div>
+    <nav class="menu-pengaturan" aria-label="Menu pengaturan">
+      <button id="menuWaBot" class="terpilih" type="button">Set WA Bot</button>
+      <button id="menuGrupBot" type="button">ID Grup Bot</button>
+      <button id="menuZonaWaktu" type="button">Zona Waktu</button>
+    </nav>
+    <div id="pesanPengaturan" class="status-pengaturan" role="status" aria-live="polite"></div>
+    <section id="panelWaBot" class="pengaturan-bagian" aria-labelledby="judulWaBot">
+      <h3 id="judulWaBot">Nomor WhatsApp bot</h3>
+      <p id="connectionStatus">Menunggu status koneksi...</p><p id="connectionInstructions" class="bantuan"></p>
+      <div class="koneksi"><img id="connectionQr" alt="Kode QR untuk menghubungkan WhatsApp" hidden></div>
+      <label for="pilihAkunWa">Akun yang pernah ditautkan</label><select id="pilihAkunWa"></select>
+      <div class="daftar-tombol"><button id="gunakanAkunWa" type="button">Gunakan akun ini</button><button id="tambahAkunWa" class="utama" type="button">Tautkan nomor lain</button><button id="lepasAkunWa" class="hapus" type="button">Lepas nomor aktif</button></div>
+      <p class="bantuan">Memilih akun lama memakai sesi tersimpan. Melepas nomor akan mengeluarkannya dari perangkat tertaut; nomor tersebut dapat ditautkan ulang lewat QR.</p>
+    </section>
+    <section id="panelGrupBot" class="pengaturan-bagian" aria-labelledby="judulGrupBot" hidden>
+      <h3 id="judulGrupBot">Grup tujuan AiBot</h3>
+      <p>Ketik <code>!idgrup</code> di grup WhatsApp. Grup itu otomatis menjadi target saat pilihan belum dikunci.</p>
+      <label for="pilihGrupBot">Grup dari riwayat akun aktif</label><select id="pilihGrupBot"></select>
+      <label class="options"><input id="kunciGrupBot" type="checkbox"><span>Kunci grup pilihan agar <code>!idgrup</code> dari grup lain tidak menggantinya</span></label>
+      <div class="daftar-tombol"><button id="simpanGrupBot" class="utama" type="button">Simpan pilihan grup</button><button id="muatUlangGrupBot" type="button">Muat ulang riwayat</button></div>
+    </section>
+  </dialog>
   <dialog id="dialogBantuan" class="panel-form" aria-labelledby="judulBantuan">
     <div class="kepala-form"><div><h2 id="judulBantuan">Bantuan AiBot</h2><p>Panduan singkat untuk mengatur dashboard dan memakai bot di WhatsApp.</p></div><button id="tutupBantuan" type="button">Tutup</button></div>
     <div class="bantuan-grid">
       <section class="bantuan-bagian"><h3>1. Hubungkan WhatsApp</h3><ol>
         <li>Jalankan <code>npm run dev</code>, lalu buka dashboard lokal.</li>
-        <li>Jika ada QR, pindai dari WhatsApp → Perangkat tertaut → Tautkan perangkat.</li>
-        <li>Ketik <code>!idgrup</code> di grup; ID grup muncul di terminal. Salin ke <code>WA_GROUP_ID</code> pada <code>.env</code>, lalu mulai ulang bot.</li>
+        <li>Buka <strong>Pengaturan → Set WA Bot</strong>. Jika ada QR, pindai dari WhatsApp → Perangkat tertaut → Tautkan perangkat.</li>
+        <li>Ketik <code>!idgrup</code> di grup. Atur atau kunci pilihan lewat <strong>Pengaturan → ID Grup Bot</strong>.</li>
         <li>Untuk perintah admin, ketik <code>!myid</code> di grup target dan masukkan ID dari terminal ke <code>BOT_ADMIN_IDS</code> pada <code>.env</code>.</li>
       </ol></section>
       <section class="bantuan-bagian"><h3>2. Pengingat biasa</h3><ul>
         <li>Klik <strong>Tambah pengingat</strong>; pilih hari, satu atau beberapa jam, lalu isi pesan.</li>
         <li>Pakai <code>@all</code> atau <code>@semua</code> jika ingin menyebut seluruh anggota grup.</li>
         <li>Gunakan toggle pada kartu untuk mengaktifkan satu pengingat. Toggle di atas halaman mengatur seluruh pengiriman.</li>
-        <li>Negara, kota, dan zona waktu diatur lewat tombol <strong>Pengaturan</strong> di kanan atas. Zona itu juga dipakai pengingat biasa.</li>
+        <li>Negara, kota, dan zona waktu diatur lewat <strong>Pengaturan → Zona Waktu</strong>. Zona itu juga dipakai pengingat biasa.</li>
       </ul></section>
       <section class="bantuan-bagian"><h3>3. Pengingat shalat</h3><ul>
         <li>Aktifkan toggle <strong>Jadwal shalat</strong>, lalu buka <strong>Detail &amp; edit pesan</strong>.</li>
@@ -133,7 +153,7 @@
       <div class="daftar-tombol"><button id="simpanShalat" class="utama" type="button">Simpan pesan</button><button class="tutupDialogShalat" type="button">Batal</button></div>
   </dialog>
   <dialog id="dialogPengaturanLokasi" class="panel-form" aria-labelledby="judulPengaturanLokasi">
-    <div class="kepala-form"><div><h2 id="judulPengaturanLokasi">Pengaturan lokasi</h2><p>Lokasi dan zona waktu dipakai untuk jadwal shalat dan reminder biasa.</p></div><button class="tutupPengaturanLokasi" type="button">Tutup</button></div>
+    <div class="kepala-form"><div><h2 id="judulPengaturanLokasi">Pengaturan lokasi</h2><p>Lokasi dan zona waktu dipakai untuk jadwal shalat dan reminder biasa.</p><p id="infoLokasi" class="bantuan"></p></div><button class="tutupPengaturanLokasi" type="button">Tutup</button></div>
     <div class="kolom">
       <div class="kolom-field"><label for="shalatNegara">Negara</label><select id="shalatNegara"><option value="Indonesia">Indonesia</option><option value="Singapore">Singapura</option><option value="Malaysia">Malaysia</option><option value="Thailand">Thailand</option><option value="Japan">Jepang</option><option value="Saudi Arabia">Arab Saudi</option><option value="United Arab Emirates">Uni Emirat Arab</option><option value="United Kingdom">Inggris</option><option value="Australia">Australia</option><option value="United States">Amerika Serikat</option></select></div>
       <div class="kolom-field"><label for="shalatKota">Kota/kabupaten</label><select id="shalatKota"></select></div>
@@ -162,6 +182,7 @@
   let editingReminderId = null;
   let hasUnconvertedCustomSchedule = false;
   let noticeTimer;
+  let accountActionPending = false;
 
   function showNotice(message, hasError = false) {
     noticeElement.textContent = message;
@@ -390,7 +411,7 @@
       renderReminders();
       document.querySelector('#shalatAktif').checked = prayerSettings.enabled;
       document.querySelector('#shalatStatus').textContent = `Jadwal shalat: ${prayerSettings.enabled ? 'Aktif' : 'Nonaktif'}`;
-      document.querySelector('#bukaPengaturanLokasi').textContent = `Lokasi: ${prayerSettings.city}, ${prayerSettings.country} / ${formatTimezone(prayerSettings.timezone)} / Pengaturan`;
+      document.querySelector('#infoLokasi').textContent = `${prayerSettings.city}, ${prayerSettings.country} / ${formatTimezone(prayerSettings.timezone)}`;
       showNotice('Pengaturan jadwal shalat tersimpan.');
       return true;
     } catch (error) { showNotice(error.message, true); return false; }
@@ -406,7 +427,7 @@
       populateCities(settings.country, settings.city, settings.timezone);
       for (const [key, selector] of Object.entries(prayerMessageFields)) document.querySelector(selector).value = settings.messages[key] || '';
       syncPrayerTimeSelection(settings.enabledPrayers);
-      document.querySelector('#bukaPengaturanLokasi').textContent = `Lokasi: ${settings.city}, ${settings.country} / ${formatTimezone(settings.timezone)} / Pengaturan`;
+      document.querySelector('#infoLokasi').textContent = `${settings.city}, ${settings.country} / ${formatTimezone(settings.timezone)}`;
     } catch (error) { showNotice(error.message, true); }
   }
 
@@ -439,7 +460,58 @@
       document.querySelector('#shalatNegara').value = prayerSettings.country;
       populateCities(prayerSettings.country, prayerSettings.city, prayerSettings.timezone);
     }
+    const settingsDialog = document.querySelector('#dialogPengaturan');
+    if (settingsDialog.open) settingsDialog.close();
     document.querySelector('#dialogPengaturanLokasi').showModal();
+  }
+
+  function settingsNotice(message, hasError = false) {
+    const element = document.querySelector('#pesanPengaturan');
+    element.textContent = message;
+    element.classList.toggle('galat', hasError);
+  }
+
+  function showSettingsMenu(menu) {
+    document.querySelector('#panelWaBot').hidden = menu !== 'wa';
+    document.querySelector('#panelGrupBot').hidden = menu !== 'groups';
+    document.querySelector('#menuWaBot').classList.toggle('terpilih', menu === 'wa');
+    document.querySelector('#menuGrupBot').classList.toggle('terpilih', menu === 'groups');
+    settingsNotice('');
+    if (menu === 'groups') void loadGroupSettings();
+  }
+
+  async function loadGroupSettings() {
+    try {
+      const groups = await callApi('/api/settings/groups');
+      const selector = document.querySelector('#pilihGrupBot');
+      selector.replaceChildren(new Option('Belum pilih grup', ''));
+      for (const group of groups.history) {
+        selector.add(new Option(`${group.name} (${group.id})`, group.id));
+      }
+      selector.value = groups.targetId;
+      document.querySelector('#kunciGrupBot').checked = groups.locked;
+    } catch (error) { settingsNotice(error.message, true); }
+  }
+
+  async function runAccountAction(url, body, successMessage) {
+    if (accountActionPending) return;
+    accountActionPending = true;
+    try {
+      settingsNotice('Memproses koneksi WhatsApp...');
+      const connection = await callApi(url, { method: 'POST', body: JSON.stringify(body || {}) });
+      await loadConnectionStatus(true);
+      document.querySelector('#pilihAkunWa').value = connection.activeAccountId;
+      await loadGroupSettings();
+      settingsNotice(successMessage);
+    } catch (error) { settingsNotice(error.message, true); }
+    finally { accountActionPending = false; }
+  }
+
+  function openSettings() {
+    document.querySelector('#dialogPengaturan').showModal();
+    showSettingsMenu('wa');
+    void loadConnectionStatus(true);
+    void loadGroupSettings();
   }
 
   document.querySelector('#shalatAktif').addEventListener('change', event => {
@@ -467,7 +539,33 @@
     updateZoneLabel();
   });
   document.querySelector('#shalatZona').addEventListener('change', updateZoneLabel);
-  document.querySelector('#bukaPengaturanLokasi').addEventListener('click', openLocationSettings);
+  document.querySelector('#bukaPengaturanLokasi').addEventListener('click', openSettings);
+  document.querySelector('#tutupPengaturan').addEventListener('click', () => document.querySelector('#dialogPengaturan').close());
+  document.querySelector('#menuWaBot').addEventListener('click', () => showSettingsMenu('wa'));
+  document.querySelector('#menuGrupBot').addEventListener('click', () => showSettingsMenu('groups'));
+  document.querySelector('#menuZonaWaktu').addEventListener('click', openLocationSettings);
+  document.querySelector('#muatUlangGrupBot').addEventListener('click', () => void loadGroupSettings());
+  document.querySelector('#simpanGrupBot').addEventListener('click', async () => {
+    try {
+      await callApi('/api/settings/groups', {
+        method: 'PUT',
+        body: JSON.stringify({ targetId: document.querySelector('#pilihGrupBot').value, locked: document.querySelector('#kunciGrupBot').checked })
+      });
+      settingsNotice('Grup target berhasil disimpan.');
+      await loadGroupSettings();
+    } catch (error) { settingsNotice(error.message, true); }
+  });
+  document.querySelector('#gunakanAkunWa').addEventListener('click', () => {
+    const accountId = document.querySelector('#pilihAkunWa').value;
+    if (accountId) void runAccountAction('/api/settings/whatsapp/select', { accountId }, 'Akun dipilih. Menunggu koneksi atau QR.');
+  });
+  document.querySelector('#tambahAkunWa').addEventListener('click', () => {
+    void runAccountAction('/api/settings/whatsapp/add', {}, 'Profil baru dibuat. Pindai QR untuk menautkan nomor.');
+  });
+  document.querySelector('#lepasAkunWa').addEventListener('click', () => {
+    if (!confirm('Lepas nomor WhatsApp aktif? Sesi perangkat ini akan keluar dan perlu dipindai ulang.')) return;
+    void runAccountAction('/api/settings/whatsapp/unlink', {}, 'Nomor dilepas. Pindai QR jika ingin menautkan ulang.');
+  });
   document.querySelector('#bukaDetailShalat').addEventListener('click', openPrayerDetails);
   document.querySelectorAll('.tutupPengaturanLokasi').forEach(button => button.addEventListener('click', () => document.querySelector('#dialogPengaturanLokasi').close()));
   document.querySelectorAll('.tutupDialogShalat').forEach(button => button.addEventListener('click', () => document.querySelector('#dialogDetailShalat').close()));
@@ -481,14 +579,25 @@
   });
 
   // Periksa status koneksi berkala supaya QR terbaru langsung terlihat di halaman.
-  async function loadConnectionStatus() {
+  async function loadConnectionStatus(selectActive = false) {
     try {
       const connection = await callApi('/api/connection');
+      const accountSelector = document.querySelector('#pilihAkunWa');
+      const previouslySelected = accountSelector.value;
+      accountSelector.replaceChildren();
+      for (const account of connection.accounts || []) {
+        const name = account.phone ? `+${account.phone}` : account.id === 'asisten-grup-ai' ? 'Akun awal' : `Nomor baru ${account.id.slice(-6)}`;
+        const detail = account.linked ? 'sesi tersimpan' : 'perlu QR';
+        const active = account.id === connection.activeAccountId ? ' • aktif' : '';
+        accountSelector.add(new Option(`${name} (${detail}${active})`, account.id));
+      }
+      accountSelector.value = !selectActive && [...accountSelector.options].some(option => option.value === previouslySelected)
+        ? previouslySelected : connection.activeAccountId;
       const statusMessages = {
         connecting: 'Sedang menghubungkan ke WhatsApp...',
         qr: 'Pindai QR dengan WhatsApp: Perangkat tertaut → Tautkan perangkat.',
-        ready: 'WhatsApp sudah terhubung.',
-        disconnected: 'WhatsApp terputus. Menunggu koneksi ulang atau QR baru.',
+        ready: `WhatsApp terhubung${connection.phone ? ` dengan +${connection.phone}` : ''}.`,
+        disconnected: 'WhatsApp terputus. Pilih ulang akun untuk menghubungkan kembali.',
         error: 'Autentikasi gagal. Periksa sesi WhatsApp dan terminal bot.'
       };
       document.querySelector('#connectionStatus').textContent = statusMessages[connection.status] || 'Status koneksi tidak diketahui.';

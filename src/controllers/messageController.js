@@ -1,8 +1,9 @@
 // Controller menerima pesan WhatsApp, memvalidasi perintah, lalu memanggil model dan layanan.
 import fs from "node:fs";
 import {
-  TARGET_GROUP, AI_MODEL, AI_MODELS, MAX_MODEL_PER_REQUEST, stateDir, botMentionIdsFile
+  AI_MODEL, AI_MODELS, MAX_MODEL_PER_REQUEST, stateDir, botMentionIdsFile
 } from "../config.js";
+import { getTargetGroup, registerGroupFromCommand } from '../models/botSettingsModel.js';
 import { state, saveState, reminderText, getReminders, getPrayerReminderSettings, sendReminderWithAllTag, createReminderVariant } from "../models/reminderModel.js";
 import {
   runAiJob, DAILY_LIMIT_MESSAGE, isDailyLimitReached, describeAiError,
@@ -25,7 +26,7 @@ const HELP_MESSAGE = [
   '!model — Status model AI',
   '!memori — Memori obrolan grup',
   '!help — Bantuan ini',
-  '!idgrup — Tampilkan ID grup di terminal',
+  '!idgrup — Pilih grup ini sebagai target (jika belum dikunci)',
   '!myid — Tampilkan ID pengirim di terminal',
   '!daftarbot @AiBot — Aktifkan mention (admin)',
   '!reminder on / off — Aktif/nonaktif pengingat (admin)',
@@ -102,19 +103,24 @@ client.on("message", async msg => {
     // Beberapa versi WhatsApp tidak mengisi mentionedIds.
     const writtenMention = /^@AiBot\b/i.test(body);
     const hasMentionMetadata = Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0;
-    if (msg.from === TARGET_GROUP && (writtenMention || hasMentionMetadata)) {
+    if (msg.from === getTargetGroup() && (writtenMention || hasMentionMetadata)) {
       console.log('[MENTION] masuk | @AiBot:', writtenMention, '| jumlah metadata:', Array.isArray(msg.mentionedIds) ? msg.mentionedIds.length : 0);
     }
     if (!body.startsWith('!') && !writtenMention && !hasMentionMetadata && !msg.hasQuotedMsg && !msg?._data?.quotedMsg) return;
 
-    // !idgrup tersedia sebelum konfigurasi, khusus admin dari grup tempat perintah dikirim.
+    // Siapa pun dapat mendaftarkan grup selama pilihan grup belum dikunci dari dashboard.
     if (body.toLowerCase() === "!idgrup") {
-       console.log("WA_GROUP_ID=" + msg.from);
-       return;
+      let groupName = msg.from;
+      try { groupName = (await msg.getChat())?.name || msg.from; } catch { /* Nama grup boleh belum tersedia. */ }
+      const group = registerGroupFromCommand(msg.from, groupName);
+      console.log(`Grup terdaftar: ${groupName} (${msg.from}); target: ${group.targetId || 'belum dipilih'}.`);
+      return msg.reply(group.locked
+        ? `ID grup ini dicatat: ${msg.from}. Grup target tetap terkunci pada ${group.targetId}.`
+        : `Sip, grup ini sekarang jadi target AiBot: ${msg.from}.`);
     }
 
     // Semua perintah lain hanya di grup yang sudah dipilih.
-    if (!TARGET_GROUP || msg.from !== TARGET_GROUP) return;
+    if (!getTargetGroup() || msg.from !== getTargetGroup()) return;
     const quotedBotMessage = await getQuotedBotMessage(msg);
     if (!body.startsWith('!') && !writtenMention && !hasMentionMetadata && !quotedBotMessage) return;
     const lower = body.toLowerCase();
@@ -205,7 +211,7 @@ client.on("message", async msg => {
       if (!admin) return msg.reply('Hanya admin terdaftar yang boleh menguji pengiriman.');
       try {
         const testReminderText = await createReminderVariant(reminderText(), 'Uji kirim reminder');
-        await sendReminderWithAllTag(client, TARGET_GROUP, '🧪 *UJI KIRIM OTOMATIS*\n\n' + testReminderText);
+        await sendReminderWithAllTag(client, getTargetGroup(), '🧪 *UJI KIRIM OTOMATIS*\n\n' + testReminderText);
         console.log('Perintah pengiriman langsung ke grup sudah dijalankan.');
       } catch (error) {
         console.error('Uji kirim otomatis gagal:', error.stack || error);

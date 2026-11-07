@@ -28,7 +28,7 @@ chmod 600 .env
 
 `PUPPETEER_SKIP_DOWNLOAD=1` menghindari unduhan browser bawaan saat instalasi pada ARM64; bot memakai Chromium yang telah dipasang di VM.
 
-Isi `.env` dengan `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`, `WA_GROUP_ID`, dan `BOT_ADMIN_IDS`. Pilih `AI_PROVIDER=gemini` atau `AI_PROVIDER=openai` serta atur `AI_BASE_URL` untuk endpoint OpenAI-compatible. Pada pemasangan pertama, `WA_GROUP_ID` dan `BOT_ADMIN_IDS` boleh kosong sampai ID terlihat di terminal bot. Atur juga:
+Isi `.env` dengan `AI_PROVIDER`, `AI_API_KEY`, dan `AI_MODEL`. Pilih `AI_PROVIDER=gemini` atau `AI_PROVIDER=openai` serta atur `AI_BASE_URL` untuk endpoint OpenAI-compatible. `WA_GROUP_ID` bersifat opsional sebagai target awal instalasi lama. `BOT_ADMIN_IDS` dapat diisi setelah ID terlihat di terminal bot. Atur juga:
 
 ```dotenv
 BOT_STATE_DIR=/home/ubuntu/bot-data/state
@@ -38,7 +38,7 @@ PUPPETEER_EXECUTABLE_PATH=/snap/bin/chromium
 
 Ganti `/home/ubuntu` bila nama pengguna atau home VM berbeda. **Kedua direktori data harus tetap ada saat kode diperbarui**: `state` menyimpan status dan memori, `auth` menyimpan sesi WhatsApp. Jangan menaruhnya dalam Git.
 
-Jalankan `npm start` sekali di terminal dan scan QR. Kirim `!idgrup` di grup, isi `WA_GROUP_ID` dari terminal, lalu restart bot. Setelah itu kirim `!myid`, isi `BOT_ADMIN_IDS`, dan restart lagi. Jika Chromium menolak sandbox pada VM, tambahkan `PUPPETEER_NO_SANDBOX=1` ke `.env` dan jalankan ulang.
+Jalankan `npm start`. Di komputer pribadi, buka SSH tunnel dengan `ssh -L 3030:127.0.0.1:3030 ubuntu@IP_VM`, lalu buka `http://127.0.0.1:3030`. Masuk ke **Pengaturan → Set WA Bot** dan pindai QR. Kirim `!idgrup` di grup; grup otomatis menjadi target dan dapat dikunci lewat **Pengaturan → ID Grup Bot**. Setelah itu kirim `!myid`, isi `BOT_ADMIN_IDS`, dan restart bot. Jika Chromium menolak sandbox pada VM, tambahkan `PUPPETEER_NO_SANDBOX=1` ke `.env` dan jalankan ulang.
 
 ## 3. Jalankan otomatis lewat systemd
 

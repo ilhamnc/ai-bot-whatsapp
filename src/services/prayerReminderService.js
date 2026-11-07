@@ -1,6 +1,6 @@
 // Mengambil jadwal shalat harian dari AlAdhan (metode Kemenag RI) dan mengirim pesan terpisah.
 import cron from 'node-cron';
-import { TARGET_GROUP } from '../config.js';
+import { getTargetGroup } from '../models/botSettingsModel.js';
 import {
   createReminderVariant, getPrayerReminderSettings, markPrayerReminderSent,
   prayerReminderAlreadySent, sendReminderWithAllTag, state
@@ -76,7 +76,8 @@ async function loadPrayerTimes(settings, localDate) {
 
 async function checkPrayerReminders(client, getIsReady) {
   const settings = getPrayerReminderSettings();
-  if (!settings.enabled || !state.enabled || !TARGET_GROUP || !getIsReady()) return;
+  const targetGroup = getTargetGroup();
+  if (!settings.enabled || !state.enabled || !targetGroup || !getIsReady()) return;
 
   const now = new Date();
   const local = getLocalParts(now, settings.timezone);
@@ -98,7 +99,7 @@ async function checkPrayerReminders(client, getIsReady) {
     }
     const message = await createReminderVariant(originalText, `Pengingat shalat ${prayer.name}`);
     try {
-      await sendReminderWithAllTag(client, TARGET_GROUP, message);
+      await sendReminderWithAllTag(client, targetGroup, message);
       markPrayerReminderSent(sentKey);
       console.log(`[SHALAT] Pengingat ${prayer.name} terkirim pukul ${currentTime} (${settings.city}, ${settings.timezone}).`);
     } catch (error) {

@@ -2,7 +2,8 @@
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import cron from 'node-cron';
-import { REMINDER_CRON, TARGET_GROUP, stateDir, stateFile, remindersFile, messageFile } from '../config.js';
+import { REMINDER_CRON, stateDir, stateFile, remindersFile, messageFile } from '../config.js';
+import { getTargetGroup } from './botSettingsModel.js';
 import { generateWithFallback, runAiJob } from '../services/aiService.js';
 
 const MAX_NAME = 80;
@@ -246,11 +247,12 @@ export async function sendScheduledReminder(client, isReady, reminderId) {
   if (!reminder || !reminder.enabled) return;
   if (!state.enabled) return console.log('Semua reminder sedang dimatikan operator.');
   if (!isReady) return console.warn(`WhatsApp belum siap; reminder "${reminder.name}" dilewati.`);
-  if (!TARGET_GROUP) return console.warn('WA_GROUP_ID belum diatur, reminder dilewati.');
+  const targetGroup = getTargetGroup();
+  if (!targetGroup) return console.warn('Grup target belum dipilih, reminder dilewati.');
   try {
     const outgoingText = await createReminderVariant(reminder.text, `Reminder "${reminder.name}"`);
     console.log(`[AI] Reminder "${reminder.name}" siap dikirim.`);
-    await sendReminderWithAllTag(client, TARGET_GROUP, outgoingText);
+    await sendReminderWithAllTag(client, targetGroup, outgoingText);
     const index = reminders.findIndex(storedReminder => storedReminder.id === reminder.id);
     if (index !== -1) {
       reminders[index].lastSentAt = new Date().toISOString();

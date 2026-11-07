@@ -1,6 +1,7 @@
 // Controller dashboard: menyajikan halaman lokal dan API untuk mengelola reminder.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { getGroupSettings, updateGroupSettings } from '../models/botSettingsModel.js';
 import {
   createReminder, deleteReminder, getPrayerReminderSettings, getReminders, savePrayerReminderSettings, saveState,
   state, updateReminder
@@ -25,7 +26,7 @@ async function readJson(request) {
 }
 
 // Setiap perubahan daftar memanggil scheduler agar jadwal langsung berubah.
-export async function handleDashboardRequest(request, response, syncSchedules, getConnectionInfo) {
+export async function handleDashboardRequest(request, response, syncSchedules, getConnectionInfo, connectionManager) {
   const url = new URL(request.url, 'http://127.0.0.1');
   if (request.method === 'GET' && url.pathname === '/') {
     return respond(response, 200, fs.readFileSync(viewPath, 'utf8'), 'text/html; charset=utf-8');
@@ -67,6 +68,27 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
   if (request.method === 'GET' && url.pathname === '/api/connection') {
     const connectionInfo = getConnectionInfo?.() || { status: 'connecting', qrDataUrl: null };
     return respond(response, 200, connectionInfo);
+  }
+  if (request.method === 'GET' && url.pathname === '/api/settings/groups') {
+    return respond(response, 200, getGroupSettings());
+  }
+  if (request.method === 'PUT' && url.pathname === '/api/settings/groups') {
+    try { return respond(response, 200, updateGroupSettings(await readJson(request))); }
+    catch (error) { return respond(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/settings/whatsapp/add') {
+    try { return respond(response, 200, await connectionManager.addAccount()); }
+    catch (error) { return respond(response, 500, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/settings/whatsapp/select') {
+    try {
+      const data = await readJson(request);
+      return respond(response, 200, await connectionManager.switchAccount(String(data.accountId || '')));
+    } catch (error) { return respond(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/settings/whatsapp/unlink') {
+    try { return respond(response, 200, await connectionManager.unlinkCurrent()); }
+    catch (error) { return respond(response, 500, { error: error.message }); }
   }
   if (request.method === 'PATCH' && url.pathname === '/api/reminders/settings') {
     try {
