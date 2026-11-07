@@ -1,7 +1,7 @@
 // Controller dashboard: menyajikan halaman lokal dan API untuk mengelola reminder.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getGroupSettings, updateGroupSettings } from '../models/botSettingsModel.js';
+import { getGroupSettings, registerGroupFromCommand, updateGroupName, updateGroupSettings } from '../models/botSettingsModel.js';
 import {
   createReminder, deleteReminder, getPrayerReminderSettings, getReminders, savePrayerReminderSettings, saveState,
   state, updateReminder
@@ -23,6 +23,14 @@ async function readJson(request) {
     if (Buffer.byteLength(raw) > MAX_REQUEST_BYTES) throw new Error('Ukuran data terlalu besar.');
   }
   try { return JSON.parse(raw || '{}'); } catch { throw new Error('Format JSON tidak valid.'); }
+}
+
+async function readGroupName(connectionManager, groupId) {
+  if (!connectionManager?.isReady()) return '';
+  try {
+    const chat = await connectionManager.getClient().getChatById(groupId);
+    return chat?.name && chat.name !== groupId ? chat.name : chat?.groupMetadata?.subject || '';
+  } catch { return ''; }
 }
 
 // Setiap perubahan daftar memanggil scheduler agar jadwal langsung berubah.
@@ -70,11 +78,27 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
     return respond(response, 200, connectionInfo);
   }
   if (request.method === 'GET' && url.pathname === '/api/settings/groups') {
+    const missingNames = getGroupSettings().history.filter(group => !group.name || group.name === group.id || group.name === 'Grup awal');
+    await Promise.all(missingNames.map(async group => {
+      const name = await readGroupName(connectionManager, group.id);
+      if (name) updateGroupName(group.id, name);
+    }));
     return respond(response, 200, getGroupSettings());
   }
   if (request.method === 'PUT' && url.pathname === '/api/settings/groups') {
     try { return respond(response, 200, updateGroupSettings(await readJson(request))); }
     catch (error) { return respond(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/settings/groups/manual') {
+    try {
+      const data = await readJson(request);
+      const groupId = String(data.groupId || '').trim();
+      if (!/^[0-9-]+@g\.us$/.test(groupId)) throw new Error('ID grup harus berupa angka dan berakhiran @g.us.');
+      const name = String(data.name || '').trim() || await readGroupName(connectionManager, groupId);
+      const current = getGroupSettings();
+      registerGroupFromCommand(groupId, name);
+      return respond(response, 200, updateGroupSettings({ targetId: groupId, locked: current.locked }));
+    } catch (error) { return respond(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/settings/whatsapp/add') {
     try { return respond(response, 200, await connectionManager.addAccount()); }
@@ -89,6 +113,12 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
   if (request.method === 'POST' && url.pathname === '/api/settings/whatsapp/unlink') {
     try { return respond(response, 200, await connectionManager.unlinkCurrent()); }
     catch (error) { return respond(response, 500, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/settings/whatsapp/remove') {
+    try {
+      const data = await readJson(request);
+      return respond(response, 200, await connectionManager.removeAccount(String(data.accountId || '')));
+    } catch (error) { return respond(response, 400, { error: error.message }); }
   }
   if (request.method === 'PATCH' && url.pathname === '/api/reminders/settings') {
     try {

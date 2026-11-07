@@ -47,6 +47,8 @@ Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan 
 
 Saat mengembangkan kode, jalankan `npm run dev`. Nodemon akan memulai ulang bot ketika file program atau `.env` disimpan. Pengaturan pemantauan berada di `package.json` dan mengabaikan data sesi serta `.state` agar perubahan data runtime tidak memicu restart.
 
+Menu **Set WA Bot** menampilkan riwayat nomor. Tombol × pada satu akun menghapus profil dan sesi lokalnya; untuk akun aktif bot juga mencoba keluar dari WhatsApp. Jika akun lama yang tidak aktif masih tercantum pada **Perangkat tertaut** di ponsel, lepaskan dari aplikasi WhatsApp. Menu **ID Grup Bot** menampilkan nama grup bila WhatsApp menyediakannya, serta menerima ID manual berbentuk `120363...@g.us`. ID tersebut berasal dari WhatsApp dan dapat dilihat lewat balasan `!idgrup`; bot harus menjadi anggota grup agar dapat mengirim pesan.
+
 Contoh Gemini:
 
 ```env

@@ -111,7 +111,16 @@ client.on("message", async msg => {
     // Siapa pun dapat mendaftarkan grup selama pilihan grup belum dikunci dari dashboard.
     if (body.toLowerCase() === "!idgrup") {
       let groupName = msg.from;
-      try { groupName = (await msg.getChat())?.name || msg.from; } catch { /* Nama grup boleh belum tersedia. */ }
+      try {
+        const chat = await msg.getChat();
+        groupName = chat?.name && chat.name !== msg.from ? chat.name : chat?.groupMetadata?.subject || msg.from;
+      } catch { /* Nama grup boleh belum tersedia. */ }
+      if (groupName === msg.from) {
+        try {
+          const chat = await client.getChatById(msg.from);
+          groupName = chat?.name && chat.name !== msg.from ? chat.name : chat?.groupMetadata?.subject || msg.from;
+        } catch { /* Nama dapat dilengkapi saat dashboard dibuka. */ }
+      }
       const group = registerGroupFromCommand(msg.from, groupName);
       console.log(`Grup terdaftar: ${groupName} (${msg.from}); target: ${group.targetId || 'belum dipilih'}.`);
       return msg.reply(group.locked

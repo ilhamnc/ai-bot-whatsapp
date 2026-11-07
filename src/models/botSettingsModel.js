@@ -68,6 +68,20 @@ export function addAccountProfile() {
   return { ...account };
 }
 
+export function removeAccountProfile(accountId) {
+  if (!settings.accounts.some(account => account.id === accountId)) throw new Error('Akun WhatsApp tidak ditemukan.');
+  settings.accounts = settings.accounts.filter(account => account.id !== accountId);
+  delete settings.groupsByAccount[accountId];
+  if (!settings.accounts.length) {
+    const replacement = { id: `wa_${randomUUID().replace(/-/g, '')}`, phone: '', linked: false, lastConnectedAt: null };
+    settings.accounts.push(replacement);
+    groupSettingsFor(replacement.id);
+  }
+  if (settings.activeAccountId === accountId) settings.activeAccountId = settings.accounts[0].id;
+  saveSettings();
+  return settings.activeAccountId;
+}
+
 export function activateAccountProfile(accountId) {
   if (!settings.accounts.some(account => account.id === accountId)) throw new Error('Akun WhatsApp tidak ditemukan.');
   settings.activeAccountId = accountId;
@@ -100,11 +114,22 @@ export function getGroupSettings() {
   return { targetId: group.targetId || '', locked: group.locked === true, history: [...(group.history || [])].map(item => ({ ...item })) };
 }
 
+export function updateGroupName(groupId, groupName) {
+  const item = groupSettingsFor().history.find(group => group.id === groupId);
+  const name = String(groupName || '').trim().slice(0, 100);
+  if (item && name && item.name !== name) {
+    item.name = name;
+    saveSettings();
+  }
+}
+
 // !idgrup mencatat grup; grup baru otomatis menjadi target selama belum dikunci.
 export function registerGroupFromCommand(groupId, groupName = '') {
-  if (!String(groupId).endsWith('@g.us')) throw new Error('ID grup WhatsApp tidak valid.');
+  if (!/^[0-9-]+@g\.us$/.test(String(groupId))) throw new Error('ID grup harus berupa angka dan berakhiran @g.us.');
   const group = groupSettingsFor();
-  const name = String(groupName || groupId).trim().slice(0, 100);
+  const previous = (group.history || []).find(item => item.id === groupId);
+  const requestedName = String(groupName || '').trim().slice(0, 100);
+  const name = requestedName && requestedName !== groupId ? requestedName : previous?.name || groupId;
   const now = new Date().toISOString();
   group.history = (group.history || []).filter(item => item.id !== groupId);
   group.history.unshift({ id: groupId, name, lastSeenAt: now });

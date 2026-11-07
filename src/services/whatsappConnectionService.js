@@ -6,7 +6,7 @@ import whatsapp from 'whatsapp-web.js';
 import { authDir, puppeteerOptions } from '../config.js';
 import {
   activateAccountProfile, addAccountProfile, getAccountProfiles, getActiveAccountId,
-  markAccountUnlinked, rememberConnectedAccount
+  markAccountUnlinked, rememberConnectedAccount, removeAccountProfile
 } from '../models/botSettingsModel.js';
 import { clearExpiredMemories } from '../models/memoryModel.js';
 import { attachMessageRoutes } from '../routes/messageRoutes.js';
@@ -156,6 +156,26 @@ export function createWhatsAppConnectionManager(onReady) {
       await removeCurrentAuth(accountId, oldClient, wasReady);
       markAccountUnlinked(accountId);
       startActiveClient();
+      return getInfo();
+    }),
+    removeAccount: accountId => runSequentially(async () => {
+      if (!getAccountProfiles().some(account => account.id === accountId)) throw new Error('Akun WhatsApp tidak ditemukan.');
+      const isActive = accountId === getActiveAccountId();
+      if (isActive) {
+        stopReminderSchedules();
+        const oldClient = client;
+        const wasReady = ready;
+        client = null;
+        ready = false;
+        status = 'connecting';
+        qrDataUrl = null;
+        await removeCurrentAuth(accountId, oldClient, wasReady);
+      } else {
+        // Sesi nonaktif hanya dapat dihapus secara lokal; logout jarak jauh perlu akun aktif.
+        await removeCurrentAuth(accountId, null, false);
+      }
+      removeAccountProfile(accountId);
+      if (isActive) startActiveClient();
       return getInfo();
     }),
     stop: () => runSequentially(() => stopCurrentClient())

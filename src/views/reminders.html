@@ -28,6 +28,7 @@
     .shalat-pilihan-baris { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; } .shalat-pilihan-baris .hari-pilihan { flex:1; } .shalat-pilihan-baris button { flex-shrink:0; }
     .aksi-header { display:flex; gap:8px; flex-wrap:wrap; } .bantuan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .bantuan-bagian { background:#111512; border:1px solid var(--garis); border-radius:12px; padding:14px; } .bantuan-bagian h3 { margin:0 0 8px; font-size:16px; } .bantuan-bagian ul,.bantuan-bagian ol { margin:0; padding-left:20px; } .bantuan-bagian li { margin:6px 0; } .bantuan-bagian code { color:var(--hijau); overflow-wrap:anywhere; }
     .menu-pengaturan { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; } .menu-pengaturan button.terpilih { background:var(--hijau); border-color:var(--hijau); color:#102016; font-weight:700; } .pengaturan-bagian[hidden] { display:none; } .pengaturan-bagian h3 { margin:0 0 8px; } .pengaturan-bagian p { margin-bottom:12px; } .pengaturan-bagian .daftar-tombol { flex-wrap:wrap; } .status-pengaturan { min-height:22px; color:var(--hijau); margin-bottom:8px; } .status-pengaturan.galat { color:var(--merah); }
+    .label-field { display:block; color:#d9e1da; font-size:13px; margin-bottom:5px; } .akun-dropdown { position:relative; margin-bottom:8px; } .akun-dropdown summary { cursor:pointer; color:var(--teks); background:#101411; border:1px solid var(--garis); border-radius:9px; padding:9px 12px; list-style:none; } .akun-dropdown summary::-webkit-details-marker { display:none; } .akun-dropdown summary::after { content:'⌄'; float:right; } .akun-dropdown[open] summary { border-color:var(--hijau); } .akun-options { position:absolute; z-index:5; top:100%; left:0; right:0; max-height:230px; overflow:auto; background:#171e19; border:1px solid var(--garis); border-radius:9px; box-shadow:0 12px 22px #0008; } .akun-option { display:flex; align-items:stretch; border-bottom:1px solid var(--garis); } .akun-option:last-child { border-bottom:0; } .akun-option button { border:0; border-radius:0; background:transparent; } .akun-option button:hover { background:#27372b; } .akun-pilih { flex:1; min-width:0; text-align:left; overflow-wrap:anywhere; } .akun-hapus { flex:0 0 44px; color:var(--merah); font-size:20px; }
     @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom,.shalat-messages,.bantuan-grid { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
@@ -53,16 +54,37 @@
       <h3 id="judulWaBot">Nomor WhatsApp bot</h3>
       <p id="connectionStatus">Menunggu status koneksi...</p><p id="connectionInstructions" class="bantuan"></p>
       <div class="koneksi"><img id="connectionQr" alt="Kode QR untuk menghubungkan WhatsApp" hidden></div>
-      <label for="pilihAkunWa">Akun yang pernah ditautkan</label><select id="pilihAkunWa"></select>
+      <span class="label-field">Akun yang pernah ditautkan</span><input id="pilihAkunWa" type="hidden"><details id="daftarAkunWa" class="akun-dropdown"><summary id="akunWaTerpilih">Memuat akun...</summary><div id="opsiAkunWa" class="akun-options"></div></details>
       <div class="daftar-tombol"><button id="gunakanAkunWa" type="button">Gunakan akun ini</button><button id="tambahAkunWa" class="utama" type="button">Tautkan nomor lain</button><button id="lepasAkunWa" class="hapus" type="button">Lepas nomor aktif</button></div>
-      <p class="bantuan">Memilih akun lama memakai sesi tersimpan. Melepas nomor akan mengeluarkannya dari perangkat tertaut; nomor tersebut dapat ditautkan ulang lewat QR.</p>
+      <p class="bantuan">Tombol × menghapus riwayat dan sesi lokal akun itu. Untuk akun aktif, bot juga mencoba keluar dari WhatsApp. Untuk akun lama yang tidak aktif, lepas perangkat dari aplikasi WhatsApp di ponsel jika masih tercantum.</p>
     </section>
     <section id="panelGrupBot" class="pengaturan-bagian" aria-labelledby="judulGrupBot" hidden>
       <h3 id="judulGrupBot">Grup tujuan AiBot</h3>
       <p>Ketik <code>!idgrup</code> di grup WhatsApp. Grup itu otomatis menjadi target saat pilihan belum dikunci.</p>
       <label for="pilihGrupBot">Grup dari riwayat akun aktif</label><select id="pilihGrupBot"></select>
+      <div class="kolom" style="margin-top:12px">
+        <div class="kolom-field"><label for="idGrupManual">Masukkan ID grup manual</label><input id="idGrupManual" type="text" placeholder="Contoh: 120363...@g.us" autocomplete="off"></div>
+        <div class="kolom-field"><label for="namaGrupManual">Nama grup (opsional)</label><input id="namaGrupManual" type="text" maxlength="100" placeholder="Otomatis jika bot sudah masuk grup"></div>
+      </div>
+      <div class="bantuan">ID didapat dari perintah <code>!idgrup</code> di grup atau dari terminal bot. Bot harus menjadi anggota grup agar dapat mengirim pesan.</div>
       <label class="options"><input id="kunciGrupBot" type="checkbox"><span>Kunci grup pilihan agar <code>!idgrup</code> dari grup lain tidak menggantinya</span></label>
-      <div class="daftar-tombol"><button id="simpanGrupBot" class="utama" type="button">Simpan pilihan grup</button><button id="muatUlangGrupBot" type="button">Muat ulang riwayat</button></div>
+      <div class="daftar-tombol"><button id="simpanGrupBot" class="utama" type="button">Simpan pilihan grup</button><button id="tambahGrupManual" type="button">Tambahkan ID manual</button><button id="muatUlangGrupBot" type="button">Muat ulang riwayat</button></div>
+    </section>
+    <section id="panelZonaWaktu" class="pengaturan-bagian" aria-labelledby="judulPengaturanLokasi" hidden>
+      <h3 id="judulPengaturanLokasi">Pengaturan lokasi</h3>
+      <p>Lokasi dan zona waktu dipakai untuk jadwal shalat dan reminder biasa.</p>
+      <p id="infoLokasi" class="bantuan"></p>
+      <div class="kolom">
+        <div class="kolom-field"><label for="shalatNegara">Negara</label><select id="shalatNegara"><option value="Indonesia">Indonesia</option><option value="Singapore">Singapura</option><option value="Malaysia">Malaysia</option><option value="Thailand">Thailand</option><option value="Japan">Jepang</option><option value="Saudi Arabia">Arab Saudi</option><option value="United Arab Emirates">Uni Emirat Arab</option><option value="United Kingdom">Inggris</option><option value="Australia">Australia</option><option value="United States">Amerika Serikat</option></select></div>
+        <div class="kolom-field"><label for="shalatKota">Kota/kabupaten</label><select id="shalatKota"></select></div>
+        <div class="kolom-field"><label for="shalatZona">Zona waktu</label><select id="shalatZona">
+          <option value="Asia/Jakarta">WIB — Asia/Jakarta</option><option value="Asia/Makassar">WITA — Asia/Makassar</option><option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
+          <option value="Asia/Singapore">UTC+08 — Asia/Singapore</option><option value="Asia/Kuala_Lumpur">UTC+08 — Asia/Kuala_Lumpur</option><option value="Asia/Bangkok">UTC+07 — Asia/Bangkok</option>
+          <option value="Asia/Tokyo">UTC+09 — Asia/Tokyo</option><option value="Asia/Riyadh">UTC+03 — Asia/Riyadh</option><option value="Asia/Dubai">UTC+04 — Asia/Dubai</option>
+          <option value="Europe/London">London — Europe/London</option><option value="Australia/Sydney">Australia Timur — Australia/Sydney</option><option value="Australia/Perth">Australia Barat — Australia/Perth</option><option value="Australia/Brisbane">Australia Queensland — Australia/Brisbane</option><option value="America/New_York">Amerika Timur — America/New_York</option><option value="America/Chicago">Amerika Tengah — America/Chicago</option><option value="America/Los_Angeles">Amerika Pasifik — America/Los_Angeles</option>
+        </select><div id="labelZonaIndonesia" class="bantuan"></div></div>
+      </div>
+      <div class="daftar-tombol"><button id="simpanPengaturanLokasi" class="utama" type="button">Simpan pengaturan</button></div>
     </section>
   </dialog>
   <dialog id="dialogBantuan" class="panel-form" aria-labelledby="judulBantuan">
@@ -152,20 +174,6 @@
       </div>
       <div class="daftar-tombol"><button id="simpanShalat" class="utama" type="button">Simpan pesan</button><button class="tutupDialogShalat" type="button">Batal</button></div>
   </dialog>
-  <dialog id="dialogPengaturanLokasi" class="panel-form" aria-labelledby="judulPengaturanLokasi">
-    <div class="kepala-form"><div><h2 id="judulPengaturanLokasi">Pengaturan lokasi</h2><p>Lokasi dan zona waktu dipakai untuk jadwal shalat dan reminder biasa.</p><p id="infoLokasi" class="bantuan"></p></div><button class="tutupPengaturanLokasi" type="button">Tutup</button></div>
-    <div class="kolom">
-      <div class="kolom-field"><label for="shalatNegara">Negara</label><select id="shalatNegara"><option value="Indonesia">Indonesia</option><option value="Singapore">Singapura</option><option value="Malaysia">Malaysia</option><option value="Thailand">Thailand</option><option value="Japan">Jepang</option><option value="Saudi Arabia">Arab Saudi</option><option value="United Arab Emirates">Uni Emirat Arab</option><option value="United Kingdom">Inggris</option><option value="Australia">Australia</option><option value="United States">Amerika Serikat</option></select></div>
-      <div class="kolom-field"><label for="shalatKota">Kota/kabupaten</label><select id="shalatKota"></select></div>
-      <div class="kolom-field"><label for="shalatZona">Zona waktu</label><select id="shalatZona">
-        <option value="Asia/Jakarta">WIB — Asia/Jakarta</option><option value="Asia/Makassar">WITA — Asia/Makassar</option><option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
-        <option value="Asia/Singapore">UTC+08 — Asia/Singapore</option><option value="Asia/Kuala_Lumpur">UTC+08 — Asia/Kuala_Lumpur</option><option value="Asia/Bangkok">UTC+07 — Asia/Bangkok</option>
-        <option value="Asia/Tokyo">UTC+09 — Asia/Tokyo</option><option value="Asia/Riyadh">UTC+03 — Asia/Riyadh</option><option value="Asia/Dubai">UTC+04 — Asia/Dubai</option>
-        <option value="Europe/London">London — Europe/London</option><option value="Australia/Sydney">Australia Timur — Australia/Sydney</option><option value="Australia/Perth">Australia Barat — Australia/Perth</option><option value="Australia/Brisbane">Australia Queensland — Australia/Brisbane</option><option value="America/New_York">Amerika Timur — America/New_York</option><option value="America/Chicago">Amerika Tengah — America/Chicago</option><option value="America/Los_Angeles">Amerika Pasifik — America/Los_Angeles</option>
-      </select><div id="labelZonaIndonesia" class="bantuan"></div></div>
-    </div>
-    <div class="daftar-tombol"><button id="simpanPengaturanLokasi" class="utama" type="button">Simpan pengaturan</button><button class="tutupPengaturanLokasi" type="button">Batal</button></div>
-  </dialog>
   <section id="reminders" aria-live="polite"></section>
 </main>
 <script>
@@ -183,6 +191,7 @@
   let hasUnconvertedCustomSchedule = false;
   let noticeTimer;
   let accountActionPending = false;
+  let accountListSignature = '';
 
   function showNotice(message, hasError = false) {
     noticeElement.textContent = message;
@@ -455,16 +464,6 @@
     document.querySelector('#dialogDetailShalat').showModal();
   }
 
-  function openLocationSettings() {
-    if (prayerSettings) {
-      document.querySelector('#shalatNegara').value = prayerSettings.country;
-      populateCities(prayerSettings.country, prayerSettings.city, prayerSettings.timezone);
-    }
-    const settingsDialog = document.querySelector('#dialogPengaturan');
-    if (settingsDialog.open) settingsDialog.close();
-    document.querySelector('#dialogPengaturanLokasi').showModal();
-  }
-
   function settingsNotice(message, hasError = false) {
     const element = document.querySelector('#pesanPengaturan');
     element.textContent = message;
@@ -474,10 +473,16 @@
   function showSettingsMenu(menu) {
     document.querySelector('#panelWaBot').hidden = menu !== 'wa';
     document.querySelector('#panelGrupBot').hidden = menu !== 'groups';
+    document.querySelector('#panelZonaWaktu').hidden = menu !== 'zone';
     document.querySelector('#menuWaBot').classList.toggle('terpilih', menu === 'wa');
     document.querySelector('#menuGrupBot').classList.toggle('terpilih', menu === 'groups');
+    document.querySelector('#menuZonaWaktu').classList.toggle('terpilih', menu === 'zone');
     settingsNotice('');
     if (menu === 'groups') void loadGroupSettings();
+    if (menu === 'zone' && prayerSettings) {
+      document.querySelector('#shalatNegara').value = prayerSettings.country;
+      populateCities(prayerSettings.country, prayerSettings.city, prayerSettings.timezone);
+    }
   }
 
   async function loadGroupSettings() {
@@ -486,7 +491,9 @@
       const selector = document.querySelector('#pilihGrupBot');
       selector.replaceChildren(new Option('Belum pilih grup', ''));
       for (const group of groups.history) {
-        selector.add(new Option(`${group.name} (${group.id})`, group.id));
+        const label = group.name && group.name !== group.id && group.name !== 'Grup awal'
+          ? `${group.name} (${group.id})` : group.id;
+        selector.add(new Option(label, group.id));
       }
       selector.value = groups.targetId;
       document.querySelector('#kunciGrupBot').checked = groups.locked;
@@ -543,8 +550,19 @@
   document.querySelector('#tutupPengaturan').addEventListener('click', () => document.querySelector('#dialogPengaturan').close());
   document.querySelector('#menuWaBot').addEventListener('click', () => showSettingsMenu('wa'));
   document.querySelector('#menuGrupBot').addEventListener('click', () => showSettingsMenu('groups'));
-  document.querySelector('#menuZonaWaktu').addEventListener('click', openLocationSettings);
+  document.querySelector('#menuZonaWaktu').addEventListener('click', () => showSettingsMenu('zone'));
   document.querySelector('#muatUlangGrupBot').addEventListener('click', () => void loadGroupSettings());
+  document.querySelector('#tambahGrupManual').addEventListener('click', async () => {
+    try {
+      const groupId = document.querySelector('#idGrupManual').value.trim();
+      const name = document.querySelector('#namaGrupManual').value.trim();
+      await callApi('/api/settings/groups/manual', { method: 'POST', body: JSON.stringify({ groupId, name }) });
+      await loadGroupSettings();
+      document.querySelector('#idGrupManual').value = '';
+      document.querySelector('#namaGrupManual').value = '';
+      settingsNotice('ID grup ditambahkan dan dipilih.');
+    } catch (error) { settingsNotice(error.message, true); }
+  });
   document.querySelector('#simpanGrupBot').addEventListener('click', async () => {
     try {
       await callApi('/api/settings/groups', {
@@ -567,7 +585,6 @@
     void runAccountAction('/api/settings/whatsapp/unlink', {}, 'Nomor dilepas. Pindai QR jika ingin menautkan ulang.');
   });
   document.querySelector('#bukaDetailShalat').addEventListener('click', openPrayerDetails);
-  document.querySelectorAll('.tutupPengaturanLokasi').forEach(button => button.addEventListener('click', () => document.querySelector('#dialogPengaturanLokasi').close()));
   document.querySelectorAll('.tutupDialogShalat').forEach(button => button.addEventListener('click', () => document.querySelector('#dialogDetailShalat').close()));
   document.querySelector('#simpanPengaturanLokasi').addEventListener('click', async () => {
     const location = {
@@ -575,7 +592,8 @@
       country: document.querySelector('#shalatNegara').value,
       timezone: document.querySelector('#shalatZona').value
     };
-    if (await savePrayerSettings(location)) document.querySelector('#dialogPengaturanLokasi').close();
+    if (await savePrayerSettings(location)) settingsNotice('Lokasi dan zona waktu tersimpan.');
+    else settingsNotice('Gagal menyimpan lokasi. Periksa data yang dipilih.', true);
   });
 
   // Periksa status koneksi berkala supaya QR terbaru langsung terlihat di halaman.
@@ -584,15 +602,48 @@
       const connection = await callApi('/api/connection');
       const accountSelector = document.querySelector('#pilihAkunWa');
       const previouslySelected = accountSelector.value;
-      accountSelector.replaceChildren();
+      const options = document.querySelector('#opsiAkunWa');
+      const phoneCounts = new Map();
       for (const account of connection.accounts || []) {
-        const name = account.phone ? `+${account.phone}` : account.id === 'asisten-grup-ai' ? 'Akun awal' : `Nomor baru ${account.id.slice(-6)}`;
-        const detail = account.linked ? 'sesi tersimpan' : 'perlu QR';
-        const active = account.id === connection.activeAccountId ? ' • aktif' : '';
-        accountSelector.add(new Option(`${name} (${detail}${active})`, account.id));
+        if (account.phone) phoneCounts.set(account.phone, (phoneCounts.get(account.phone) || 0) + 1);
       }
-      accountSelector.value = !selectActive && [...accountSelector.options].some(option => option.value === previouslySelected)
+      const accountName = account => account.phone
+        ? `+${account.phone}${phoneCounts.get(account.phone) > 1 ? ` · ${account.id.slice(-6)}` : ''}`
+        : account.id === 'asisten-grup-ai' ? 'Akun awal' : `Nomor baru ${account.id.slice(-6)}`;
+      const nextSignature = JSON.stringify({ accounts: connection.accounts, activeAccountId: connection.activeAccountId });
+      if (nextSignature !== accountListSignature) {
+        options.replaceChildren();
+        for (const account of connection.accounts || []) {
+          const name = accountName(account);
+          const detail = account.linked ? 'sesi tersimpan' : 'perlu QR';
+          const active = account.id === connection.activeAccountId ? ' • aktif' : '';
+          const label = `${name} (${detail}${active})`;
+          const row = document.createElement('div'); row.className = 'akun-option';
+          const choose = addText(row, 'button', label, 'akun-pilih'); choose.type = 'button';
+          choose.addEventListener('click', () => {
+            accountSelector.value = account.id;
+            document.querySelector('#akunWaTerpilih').textContent = label;
+            document.querySelector('#daftarAkunWa').open = false;
+          });
+          const remove = addText(row, 'button', '×', 'akun-hapus'); remove.type = 'button';
+          remove.setAttribute('aria-label', `Hapus riwayat ${name}`);
+          remove.addEventListener('click', () => {
+            const warning = account.id === connection.activeAccountId
+              ? `Hapus riwayat ${name} dan lepas sesi WhatsApp aktif?`
+              : `Hapus riwayat dan sesi lokal ${name}? Jika masih tertaut di ponsel, lepaskan juga dari WhatsApp.`;
+            if (!confirm(warning)) return;
+            document.querySelector('#daftarAkunWa').open = false;
+            void runAccountAction('/api/settings/whatsapp/remove', { accountId: account.id }, 'Riwayat akun dan sesi lokal dihapus.');
+          });
+          options.append(row);
+        }
+        accountListSignature = nextSignature;
+      }
+      accountSelector.value = !selectActive && (connection.accounts || []).some(account => account.id === previouslySelected)
         ? previouslySelected : connection.activeAccountId;
+      const selectedAccount = (connection.accounts || []).find(account => account.id === accountSelector.value);
+      document.querySelector('#akunWaTerpilih').textContent = selectedAccount
+        ? `${accountName(selectedAccount)}${selectedAccount.id === connection.activeAccountId ? ' • aktif' : ''}` : 'Belum ada akun';
       const statusMessages = {
         connecting: 'Sedang menghubungkan ke WhatsApp...',
         qr: 'Pindai QR dengan WhatsApp: Perangkat tertaut → Tautkan perangkat.',
