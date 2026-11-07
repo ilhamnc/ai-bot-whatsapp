@@ -46,7 +46,7 @@ Pastikan `command -v node` memberi path Node yang dapat dipakai oleh systemd. Bu
 
 ```ini
 [Unit]
-Description=Bot AI WhatsApp
+Description=AiBot WhatsApp
 After=network-online.target snapd.socket
 Wants=network-online.target
 

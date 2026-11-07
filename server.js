@@ -39,7 +39,7 @@ client.on("ready", () => {
   connectionStatus = 'ready';
   connectionQrDataUrl = null;
   clearExpiredMemories();
-  console.log("Bot WhatsApp sudah terhubung.");
+  console.log("AiBot WhatsApp sudah terhubung.");
   console.log(`Pengingat terjadwal: ${getReminders().filter(reminder => reminder.enabled).length}. Grup: ${TARGET_GROUP || "BELUM DIISI"}`);
   console.log(`Provider AI: ${AI_PROVIDER_NAME} (${AI_PROVIDER})`);
   console.log("Urutan model: " + AI_MODELS.join(" -> "));

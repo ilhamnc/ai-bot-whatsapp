@@ -1,4 +1,4 @@
-﻿# Bot AI WhatsApp
+﻿# AiBot WhatsApp
 
 Bot untuk satu grup WhatsApp. Bot menjawab pertanyaan melalui Gemini atau API yang kompatibel dengan format OpenAI, dan dapat mengirim reminder Senin–Jumat pukul 14.30 WIB.
 
@@ -68,14 +68,14 @@ AI_FALLBACK_MODELS=gpt-4o-mini
 
 | Perintah | Kegunaan |
 |---|---|
-| `!ai pertanyaan` atau `@Bot Saya pertanyaan` | Bertanya ke AI |
+| `!ai pertanyaan` atau `@AiBot pertanyaan` | Bertanya ke AI |
 | `!jadwal`, `!status`, `!model`, `!memori` | Melihat status bot dan semua jadwal reminder |
 | `!help` | Daftar perintah |
 | `!idgrup`, `!myid` | Menampilkan ID di terminal bot |
 | `!reminder on` / `!reminder off` | Mengubah status reminder; operator saja |
 | `!testreminder` / `!testkirim` | Mengirim reminder uji dengan @all; operator saja |
 | `!resetai` | Mengosongkan memori AI; operator saja |
-| `!daftarbot @Bot Saya` | Mengaktifkan mention bot; operator saja |
+| `!daftarbot @AiBot` | Mengaktifkan mention bot; operator saja |
 
 Tuliskan `@all` atau `@semua` pada isi reminder untuk menyebut semua anggota. Perintah uji mengirim reminder aktif pertama sungguhan ke grup terpilih.
 

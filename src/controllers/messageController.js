@@ -34,7 +34,7 @@ function saveBotMentionId(id) {
 function isCalledWithMention(msg, text, client) {
   const mentions = (Array.isArray(msg.mentionedIds) ? msg.mentionedIds : [])
     .map(normalizeMentionId).filter(Boolean);
-  if (/^@Bot\s+Saya\b/i.test(text)) return true;
+  if (/^@AiBot\b/i.test(text)) return true;
   if (mentions.length === 0) return false;
   const selfId = normalizeMentionId(client.info?.wid);
   const extraIds = (process.env.BOT_MENTION_IDS || '')
@@ -45,11 +45,11 @@ function isCalledWithMention(msg, text, client) {
   ));
   if (matchedId) return true;
   // Fallback aman untuk nama yang sudah dikenal: harus ada metadata mention asli.
-  if (/@Bot\s+Saya\b/i.test(text)) return true;
+  if (/@AiBot\b/i.test(text)) return true;
   return false;
 }
 function removeBotTag(text) {
-  return text.replace(/@Bot\s+Saya\b/i, ' ')
+  return text.replace(/@AiBot\b/i, ' ')
     .replace(/@\d{5,}(?=\s|$)/g, ' ')
     .replace(/\s+/g, ' ').trim();
 }
@@ -60,10 +60,10 @@ client.on("message", async msg => {
     if (msg.fromMe || !msg.body || !msg.from?.endsWith("@g.us")) return;
     const body = msg.body.trim();
     // Beberapa versi WhatsApp tidak mengisi mentionedIds.
-    const writtenMention = /^@Bot\s+Saya\b/i.test(body);
+    const writtenMention = /^@AiBot\b/i.test(body);
     const hasMentionMetadata = Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0;
     if (msg.from === TARGET_GROUP && (writtenMention || hasMentionMetadata)) {
-      console.log('[MENTION] masuk | @Bot Saya:', writtenMention, '| jumlah metadata:', Array.isArray(msg.mentionedIds) ? msg.mentionedIds.length : 0);
+      console.log('[MENTION] masuk | @AiBot:', writtenMention, '| jumlah metadata:', Array.isArray(msg.mentionedIds) ? msg.mentionedIds.length : 0);
     }
     if (!body.startsWith('!') && !writtenMention && !hasMentionMetadata) return;
 
@@ -89,11 +89,11 @@ client.on("message", async msg => {
       const ids = (Array.isArray(msg.mentionedIds) ? msg.mentionedIds : [])
         .map(normalizeMentionId).filter(Boolean);
       if (ids.length !== 1 || !/^\d+@(lid|c\.us)$/.test(ids[0])) {
-        return msg.reply('Ketik !daftarbot lalu @ dan pilih Bot Saya dari daftar anggota. Harus tepat satu mention.');
+        return msg.reply('Ketik !daftarbot lalu pilih @AiBot dari daftar anggota. Harus tepat satu mention.');
       }
       saveBotMentionId(ids[0]);
       console.log('[MENTION] ID bot berhasil didaftarkan oleh admin.');
-      return msg.reply('✅ Sip, mention Bot Saya udah aktif! Coba @Bot Saya halo.');
+      return msg.reply('✅ Sip, mention AiBot udah aktif! Coba @AiBot halo.');
     }
 
     if (lower === '!myid') {
@@ -107,9 +107,9 @@ client.on("message", async msg => {
 
     if (lower === "!help") {
       return msg.reply(
-        "🤖 *Asisten AI WhatsApp*\n\n" +
-        "!ai pertanyaan / @Bot Saya pertanyaan — Tanya AI\n" +
-        "!daftarbot @Bot Saya — Aktifkan mention (admin, sekali saja)\n" +
+        "🤖 *AiBot WhatsApp*\n\n" +
+        "!ai pertanyaan / @AiBot pertanyaan — Tanya AI\n" +
+        "!daftarbot @AiBot — Aktifkan mention (admin, sekali saja)\n" +
         "!schedule — Lihat jadwal reminder\n" +
         "!status — Status bot\n" +
         "!model — Cek urutan model AI dan status fallback\n" +
@@ -138,7 +138,7 @@ client.on("message", async msg => {
       const lastSummaryModel = successfulModels.ringkasan;
       const nextCandidate = getNextModelCandidate();
       return msg.reply(
-        `✅ *Status Bot Saya*\n` +
+        `✅ *Status AiBot*\n` +
         `- WhatsApp: ${getIsReady() ? "terhubung" : "belum siap"}\n` +
         `- Provider: ${AI_PROVIDER_NAME}\n` +
         `- Model utama: ${AI_MODEL}\n` +
@@ -193,7 +193,7 @@ client.on("message", async msg => {
           .replace(/^@?\d+@(lid|c\.us)\s*/i, '')
           .replace(/^@\d+\s*/i, '').trim();
       if (!/^!ai(?:\s|$)/i.test(body)) console.log('[MENTION] question dikirim ke AI.');
-      if (!question) return msg.reply('Coba mention @Bot Saya lalu ketik question, atau pakai !ai question.');
+      if (!question) return msg.reply('Coba mention @AiBot lalu ketik pertanyaan, atau pakai !ai pertanyaan.');
       // Semua model sudah mencapai batas harian? Beri tahu tanpa memanggil API lagi.
       if (AI_MODELS.every(isDailyLimitReached)) return msg.reply(DAILY_LIMIT_MESSAGE);
       // Tanpa cooldown per anggota, tidak ada jatah harian buatan pada bot.
