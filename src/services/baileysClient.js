@@ -3,6 +3,10 @@
 import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import makeWASocket, { DisconnectReason, jidNormalizedUser, useMultiFileAuthState } from '@whiskeysockets/baileys';
+import pino from 'pino';
+
+// Log detail handshake Baileys berisi metadata teknis yang tidak perlu dicetak rutin.
+const whatsappLogger = pino({ level: 'warn' });
 
 function unwrapMessage(message) {
   let content = message || {};
@@ -49,9 +53,9 @@ export class BaileysClient extends EventEmitter {
     if (this.destroyed) return;
     const socket = makeWASocket({
       auth: this.authState,
-      printQRInTerminal: false,
+      logger: whatsappLogger,
+      // Riwayat penuh tidak diperlukan; sinkronisasi awal tetap penting untuk peta ID @lid.
       syncFullHistory: false,
-      shouldSyncHistoryMessage: () => false,
       markOnlineOnConnect: false
     });
     this.socket = socket;
