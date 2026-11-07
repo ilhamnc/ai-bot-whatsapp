@@ -51,6 +51,7 @@ const dashboardPort = Number(process.env.PORT || process.env.DASHBOARD_PORT || 3
 const dashboardHost = process.env.DASHBOARD_HOST?.trim() || '127.0.0.1';
 const dashboardUser = process.env.DASHBOARD_USER?.trim() || '';
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || '';
+const isLocalDashboard = ['127.0.0.1', '::1', 'localhost'].includes(dashboardHost);
 if (!process.env.BOT_ADMIN_IDS?.trim()) {
   console.warn('[KONFIGURASI] BOT_ADMIN_IDS kosong; perintah khusus admin WhatsApp tidak akan tersedia.');
 }
