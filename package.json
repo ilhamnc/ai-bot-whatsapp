@@ -13,16 +13,26 @@
         "node": ">=22"
     },
     "nodemonConfig": {
-        "watch": ["server.js", "bot.js", "src", ".env"],
+        "watch": [
+            "server.js",
+            "bot.js",
+            "src",
+            ".env"
+        ],
         "ext": "js,mjs,cjs,json,html,env",
-        "ignore": [".state/**", ".wwebjs_auth/**", ".wwebjs_cache/**", "node_modules/**"],
+        "ignore": [
+            ".state/**",
+            ".wwebjs_auth/**",
+            ".wwebjs_cache/**",
+            "node_modules/**"
+        ],
         "delay": 500
     },
     "dependencies": {
         "@google/genai": "2.32.0",
         "dotenv": "18.0.9",
         "node-cron": "4.6.0",
-        "qrcode-terminal": "0.12.0",
+        "qrcode": "^1.5.4",
         "whatsapp-web.js": "1.34.7"
     },
     "devDependencies": {

@@ -2,9 +2,9 @@
 import { createServer } from 'node:http';
 import { handleDashboardRequest } from '../controllers/dashboardController.js';
 
-export function createDashboardServer(syncSchedules) {
+export function createDashboardServer(syncSchedules, getConnectionInfo) {
   return createServer((request, response) => {
-    void handleDashboardRequest(request, response, syncSchedules).catch(error => {
+    void handleDashboardRequest(request, response, syncSchedules, getConnectionInfo).catch(error => {
       console.error('Kesalahan dashboard:', error);
       if (!response.headersSent) {
         response.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });

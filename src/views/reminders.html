@@ -13,13 +13,14 @@
     button:hover { border-color:#647667 } button.utama { color:#102016; background:var(--hijau); border-color:var(--hijau); font-weight:700 } button.hapus { color:var(--merah) }
     .bilah-atas,.kepala-kartu,.daftar-tombol { display:flex; align-items:center; justify-content:space-between; gap:12px } .bilah-atas { margin:22px 0 16px; flex-wrap:wrap }
     .pesan-status { min-height:24px; color:var(--hijau); margin:0 0 12px } .pesan-status.galat { color:var(--merah) }
+    .koneksi { display:flex; align-items:center; gap:22px; } .koneksi img { width:min(240px,45vw); aspect-ratio:1; background:#fff; padding:8px; border-radius:10px; } .koneksi img[hidden] { display:none; } .koneksi-info { display:grid; gap:8px; } .koneksi-info p { max-width:540px; }
     .kartu,.panel-form { background:linear-gradient(145deg,#1a211c,#151a16); border:1px solid var(--garis); border-radius:16px; padding:20px; margin:14px 0; box-shadow:0 12px 35px #0002; }
     .kepala-kartu { align-items:flex-start } .kepala-kartu h2 { overflow-wrap:anywhere } .lencana { display:inline-flex; padding:4px 9px; border-radius:999px; color:var(--hijau); background:#193a26; font-size:12px; white-space:nowrap } .lencana.nonaktif { color:var(--redup); background:#303633 }
     .metadata { display:flex; flex-wrap:wrap; gap:8px 16px; color:var(--redup); font-size:13px; margin:10px 0 15px } .pratinjau { white-space:pre-wrap; overflow-wrap:anywhere; color:#d7dfd8; background:#111512; border:1px solid #262e28; border-radius:10px; padding:12px; max-height:130px; overflow:auto; }
     .daftar-tombol { justify-content:flex-start; margin-top:15px } .pengisi { flex:1 } .panel-form[hidden] { display:none } .kepala-form { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
     .kolom { display:grid; grid-template-columns:1fr 1fr; gap:14px } label { display:block; color:#d9e1da; font-size:13px; margin-bottom:7px } input[type=text],textarea { width:100%; color:var(--teks); background:#101411; border:1px solid var(--garis); border-radius:9px; padding:11px 12px; outline:none } input:focus,textarea:focus { border-color:var(--hijau) } textarea { min-height:150px; resize:vertical } .kolom-field { margin-bottom:15px } .lebar { grid-column:1/-1 } .options { display:flex; align-items:center; gap:9px; color:var(--redup); font-size:13px } .options input { accent-color:#9bd9a1; width:17px; height:17px }
     .bantuan { margin-top:7px; font-size:12px; color:var(--redup) } .kosong { text-align:center; padding:35px 20px; color:var(--redup); border:1px dashed var(--garis); border-radius:14px }
-    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } }
+    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
 <body>
@@ -28,6 +29,10 @@
     <div><h1>Pengingat bot</h1><p>Atur beberapa pesan terjadwal untuk grup WhatsApp.</p></div>
     <button id="tambahPengingat" class="utama" type="button">＋ Tambah pengingat</button>
   </header>
+  <section class="panel-form koneksi" aria-live="polite">
+    <img id="connectionQr" alt="Kode QR untuk menghubungkan WhatsApp" hidden>
+    <div class="koneksi-info"><h2>Status WhatsApp</h2><p id="connectionStatus">Menunggu status koneksi...</p><p id="connectionInstructions" class="bantuan"></p></div>
+  </section>
   <section class="bilah-atas">
     <label class="options"><input id="statusGlobal" type="checkbox"><span>Pengiriman pengingat diaktifkan</span></label>
     <span id="zonaWaktu" class="bantuan"></span>
@@ -52,6 +57,7 @@
   const formPanel = document.querySelector('#formPanel');
   const reminderForm = document.querySelector('#formPengingat');
   const noticeElement = document.querySelector('#pesanStatus');
+  const connectionQrElement = document.querySelector('#connectionQr');
   let reminders = [];
   let editingReminderId = null;
   let noticeTimer;
@@ -117,6 +123,29 @@
     } catch (error) { showNotice(error.message, true); }
   }
 
+  // Periksa status koneksi berkala supaya QR terbaru langsung terlihat di halaman.
+  async function loadConnectionStatus() {
+    try {
+      const connection = await callApi('/api/connection');
+      const statusMessages = {
+        connecting: 'Sedang menghubungkan ke WhatsApp...',
+        qr: 'Pindai QR dengan WhatsApp: Perangkat tertaut → Tautkan perangkat.',
+        ready: 'WhatsApp sudah terhubung.',
+        disconnected: 'WhatsApp terputus. Menunggu koneksi ulang atau QR baru.',
+        error: 'Autentikasi gagal. Periksa sesi WhatsApp dan terminal bot.'
+      };
+      document.querySelector('#connectionStatus').textContent = statusMessages[connection.status] || 'Status koneksi tidak diketahui.';
+      document.querySelector('#connectionInstructions').textContent = connection.status === 'qr'
+        ? 'QR akan diperbarui otomatis jika kode pairing kedaluwarsa.' : '';
+      const nextQr = connection.status === 'qr' ? connection.qrDataUrl : null;
+      connectionQrElement.hidden = !nextQr;
+      if (nextQr && connectionQrElement.src !== nextQr) connectionQrElement.src = nextQr;
+      if (!nextQr) connectionQrElement.removeAttribute('src');
+    } catch (error) {
+      document.querySelector('#connectionStatus').textContent = 'Tidak dapat membaca status koneksi WhatsApp.';
+    }
+  }
+
   function openForm(reminder = null) {
     editingReminderId = reminder?.id || null;
     document.querySelector('#judulForm').textContent = reminder ? 'Edit pengingat' : 'Tambah pengingat';
@@ -171,6 +200,8 @@
     }
   });
   void loadReminders();
+  void loadConnectionStatus();
+  setInterval(() => { void loadConnectionStatus(); }, 2000);
 </script>
 </body>
 </html>

@@ -25,7 +25,7 @@ async function readJson(request) {
 }
 
 // Setiap perubahan daftar memanggil scheduler agar jadwal langsung berubah.
-export async function handleDashboardRequest(request, response, syncSchedules) {
+export async function handleDashboardRequest(request, response, syncSchedules, getConnectionInfo) {
   const url = new URL(request.url, 'http://127.0.0.1');
   if (request.method === 'GET' && url.pathname === '/') {
     return respond(response, 200, fs.readFileSync(viewPath, 'utf8'), 'text/html; charset=utf-8');
@@ -36,6 +36,10 @@ export async function handleDashboardRequest(request, response, syncSchedules) {
       globallyEnabled: state.enabled,
       reminders: getReminders()
     });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/connection') {
+    const connectionInfo = getConnectionInfo?.() || { status: 'connecting', qrDataUrl: null };
+    return respond(response, 200, connectionInfo);
   }
   if (request.method === 'PATCH' && url.pathname === '/api/reminders/settings') {
     try {

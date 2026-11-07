@@ -1,6 +1,6 @@
 // Entry point: menyiapkan koneksi WhatsApp dan jadwal reminder.
 import cron from "node-cron";
-import qrcode from "qrcode-terminal";
+import QRCode from "qrcode";
 import whatsapp from "whatsapp-web.js";
 import { TZ, REMINDER_CRON, TARGET_GROUP, AI_MODELS, AI_PROVIDER, authDir, puppeteerOptions, validateConfig } from "./src/config.js";
 import { clearExpiredMemories } from "./src/models/memoryModel.js";
@@ -19,13 +19,25 @@ const client = new Client({
   puppeteer: puppeteerOptions
 });
 let isReady = false;
+let connectionStatus = 'connecting';
+let connectionQrDataUrl = null;
 
-client.on("qr", qr => {
-  console.log("\nPindai kode QR dengan WhatsApp Android > Perangkat tertaut > Tautkan perangkat:\n");
-  qrcode.generate(qr, { small: true });
+client.on("qr", async qr => {
+  connectionStatus = 'qr';
+  try {
+    // Simpan QR sebagai gambar untuk ditampilkan pada dashboard lokal.
+    connectionQrDataUrl = await QRCode.toDataURL(qr, { errorCorrectionLevel: 'M', margin: 2, width: 320 });
+    console.log('QR pairing WhatsApp tersedia di dashboard reminder.');
+  } catch (error) {
+    connectionQrDataUrl = null;
+    connectionStatus = 'error';
+    console.error('Gagal membuat gambar QR WhatsApp:', error.message);
+  }
 });
 client.on("ready", () => {
   isReady = true;
+  connectionStatus = 'ready';
+  connectionQrDataUrl = null;
   clearExpiredMemories();
   console.log("Bot WhatsApp sudah terhubung.");
   console.log(`Pengingat terjadwal: ${getReminders().filter(reminder => reminder.enabled).length}. Grup: ${TARGET_GROUP || "BELUM DIISI"}`);
@@ -35,9 +47,15 @@ client.on("ready", () => {
 });
 client.on("disconnected", reason => {
   isReady = false;
+  connectionStatus = 'disconnected';
+  connectionQrDataUrl = null;
   console.warn("WhatsApp terputus:", reason);
 });
-client.on("auth_failure", () => console.error("Autentikasi WhatsApp gagal."));
+client.on("auth_failure", () => {
+  connectionStatus = 'error';
+  connectionQrDataUrl = null;
+  console.error("Autentikasi WhatsApp gagal.");
+});
 
 // Route meneruskan event pesan ke controller khusus pesan.
 attachMessageRoutes(client, () => isReady);
@@ -45,7 +63,10 @@ syncReminderSchedules(client, () => isReady);
 
 // Dashboard hanya dibuka di localhost; akses dari komputer lain bisa memakai SSH tunnel.
 const dashboardPort = Number(process.env.DASHBOARD_PORT || 3030);
-const dashboardServer = createDashboardServer(() => syncReminderSchedules(client, () => isReady));
+const dashboardServer = createDashboardServer(
+  () => syncReminderSchedules(client, () => isReady),
+  () => ({ status: connectionStatus, qrDataUrl: connectionQrDataUrl })
+);
 dashboardServer.listen(dashboardPort, '127.0.0.1', () => {
   console.log(`Dashboard reminder: http://127.0.0.1:${dashboardPort}`);
 });
