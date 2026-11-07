@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pengingat Bot | AiBot</title>
+  <style>
+    :root { color-scheme: dark; --latar:#101311; --panel:#191e1a; --panel2:#202721; --garis:#303a32; --teks:#edf4ed; --redup:#a0ada2; --hijau:#a7e3ad; --merah:#ffb4ab; }
+    * { box-sizing:border-box } body { margin:0; background:radial-gradient(ellipse at 20% 0%,#1b2a20 0,transparent 45%),var(--latar); color:var(--teks); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+    main { width:min(1020px,100% - 32px); margin:42px auto 80px; } header { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:28px; }
+    h1 { font-size:clamp(28px,4vw,40px); letter-spacing:-1px; margin:0 0 6px } h2 { margin:0; font-size:20px } p { margin:0; color:var(--redup) }
+    button,input,textarea { font:inherit } button { border:1px solid var(--garis); background:var(--panel2); color:var(--teks); border-radius:10px; padding:10px 14px; cursor:pointer; }
+    button:hover { border-color:#647667 } button.utama { color:#102016; background:var(--hijau); border-color:var(--hijau); font-weight:700 } button.hapus { color:var(--merah) }
+    .bilah-atas,.kepala-kartu,.daftar-tombol { display:flex; align-items:center; justify-content:space-between; gap:12px } .bilah-atas { margin:22px 0 16px; flex-wrap:wrap }
+    .pesan-status { min-height:24px; color:var(--hijau); margin:0 0 12px } .pesan-status.galat { color:var(--merah) }
+    .kartu,.panel-form { background:linear-gradient(145deg,#1a211c,#151a16); border:1px solid var(--garis); border-radius:16px; padding:20px; margin:14px 0; box-shadow:0 12px 35px #0002; }
+    .kepala-kartu { align-items:flex-start } .kepala-kartu h2 { overflow-wrap:anywhere } .lencana { display:inline-flex; padding:4px 9px; border-radius:999px; color:var(--hijau); background:#193a26; font-size:12px; white-space:nowrap } .lencana.nonaktif { color:var(--redup); background:#303633 }
+    .metadata { display:flex; flex-wrap:wrap; gap:8px 16px; color:var(--redup); font-size:13px; margin:10px 0 15px } .pratinjau { white-space:pre-wrap; overflow-wrap:anywhere; color:#d7dfd8; background:#111512; border:1px solid #262e28; border-radius:10px; padding:12px; max-height:130px; overflow:auto; }
+    .daftar-tombol { justify-content:flex-start; margin-top:15px } .pengisi { flex:1 } .panel-form[hidden] { display:none } .kepala-form { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
+    .kolom { display:grid; grid-template-columns:1fr 1fr; gap:14px } label { display:block; color:#d9e1da; font-size:13px; margin-bottom:7px } input[type=text],textarea { width:100%; color:var(--teks); background:#101411; border:1px solid var(--garis); border-radius:9px; padding:11px 12px; outline:none } input:focus,textarea:focus { border-color:var(--hijau) } textarea { min-height:150px; resize:vertical } .kolom-field { margin-bottom:15px } .lebar { grid-column:1/-1 } .options { display:flex; align-items:center; gap:9px; color:var(--redup); font-size:13px } .options input { accent-color:#9bd9a1; width:17px; height:17px }
+    .bantuan { margin-top:7px; font-size:12px; color:var(--redup) } .kosong { text-align:center; padding:35px 20px; color:var(--redup); border:1px dashed var(--garis); border-radius:14px }
+    @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Pengingat bot</h1><p>Atur beberapa pesan terjadwal untuk grup WhatsApp.</p></div>
+    <button id="tambahPengingat" class="utama" type="button">＋ Tambah pengingat</button>
+  </header>
+  <section class="bilah-atas">
+    <label class="options"><input id="statusGlobal" type="checkbox"><span>Pengiriman pengingat diaktifkan</span></label>
+    <span id="zonaWaktu" class="bantuan"></span>
+  </section>
+  <div id="pesanStatus" class="pesan-status" role="status" aria-live="polite"></div>
+  <section id="formPanel" class="panel-form" hidden>
+    <div class="kepala-form"><h2 id="judulForm">Tambah pengingat</h2><button id="tutupForm" type="button">Tutup</button></div>
+    <form id="formPengingat">
+      <div class="kolom">
+        <div class="kolom-field"><label for="namaPengingat">Nama pengingat</label><input id="namaPengingat" type="text" maxlength="80" required placeholder="Contoh: Pengingat rapat"></div>
+        <div class="kolom-field"><label for="jadwalCron">Jadwal cron</label><input id="jadwalCron" type="text" required placeholder="30 14 * * 1-5"><div class="bantuan">Format 5 bagian: menit jam tanggal bulan hari. Zona waktu mengikuti bot.</div></div>
+        <div class="kolom-field lebar"><label for="isiPengingat">Isi pesan</label><textarea id="isiPengingat" maxlength="10000" required placeholder="Tulis isi pengingat. Gunakan @all atau @semua untuk menyebut seluruh anggota."></textarea><div class="bantuan">Isi pengingat lama sudah dipindahkan ke pengingat bawaan. Maksimal 10.000 karakter.</div></div>
+        <div class="kolom-field lebar"><label class="options"><input id="pengingatAktif" type="checkbox" checked><span>Pengingat ini aktif</span></label></div>
+      </div>
+      <div class="daftar-tombol"><button class="utama" type="submit">Simpan pengingat</button><button id="batalForm" type="button">Batal</button></div>
+    </form>
+  </section>
+  <section id="reminders" aria-live="polite"></section>
+</main>
+<script>
+  const remindersListElement = document.querySelector('#reminders');
+  const formPanel = document.querySelector('#formPanel');
+  const reminderForm = document.querySelector('#formPengingat');
+  const noticeElement = document.querySelector('#pesanStatus');
+  let reminders = [];
+  let editingReminderId = null;
+  let noticeTimer;
+
+  function showNotice(message, hasError = false) {
+    noticeElement.textContent = message;
+    noticeElement.classList.toggle('galat', hasError);
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => { noticeElement.textContent = ''; }, 5000);
+  }
+
+  async function callApi(url, options = {}) {
+    const response = await fetch(url, { ...options, headers: { 'content-type': 'application/json', ...(options.headers || {}) } });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Permintaan gagal.');
+    return data;
+  }
+
+  function addText(parentElement, tagName, text, className = '') {
+    const element = document.createElement(tagName);
+    element.textContent = text;
+    if (className) element.className = className;
+    parentElement.append(element);
+    return element;
+  }
+
+  function renderReminders() {
+    remindersListElement.replaceChildren();
+    if (!reminders.length) {
+      addText(remindersListElement, 'div', 'Belum ada pengingat. Tambahkan pengingat pertama untuk membuat jadwal.', 'kosong');
+      return;
+    }
+    for (const reminder of reminders) {
+      const card = document.createElement('article'); card.className = 'kartu';
+      const cardHead = document.createElement('div'); cardHead.className = 'kepala-kartu';
+      addText(cardHead, 'h2', reminder.name);
+      addText(cardHead, 'span', reminder.enabled ? 'Aktif' : 'Nonaktif', `lencana${reminder.enabled ? '' : ' nonaktif'}`);
+      card.append(cardHead);
+      const metadata = document.createElement('div'); metadata.className = 'metadata';
+      addText(metadata, 'span', `Cron: ${reminder.cron}`);
+      addText(metadata, 'span', `Zona waktu: ${document.querySelector('#zonaWaktu').textContent}`);
+      if (reminder.lastSentAt) addText(metadata, 'span', `Terakhir dikirim: ${new Date(reminder.lastSentAt).toLocaleString('id-ID')}`);
+      card.append(metadata);
+      addText(card, 'div', reminder.text, 'pratinjau');
+      const actionButtons = document.createElement('div'); actionButtons.className = 'daftar-tombol';
+      const editButton = addText(actionButtons, 'button', 'Edit'); editButton.type = 'button'; editButton.addEventListener('click', () => openForm(reminder));
+      const statusButton = addText(actionButtons, 'button', reminder.enabled ? 'Nonaktifkan' : 'Aktifkan'); statusButton.type = 'button';
+      statusButton.addEventListener('click', () => saveReminder({ ...reminder, enabled: !reminder.enabled }));
+      addText(actionButtons, 'span', '', 'pengisi');
+      const deleteButton = addText(actionButtons, 'button', 'Hapus', 'hapus'); deleteButton.type = 'button';
+      deleteButton.addEventListener('click', () => deleteReminder(reminder));
+      card.append(actionButtons); remindersListElement.append(card);
+    }
+  }
+
+  async function loadReminders() {
+    try {
+      const data = await callApi('/api/reminders');
+      reminders = data.reminders;
+      document.querySelector('#zonaWaktu').textContent = `Zona waktu: ${data.timezone}`;
+      document.querySelector('#statusGlobal').checked = data.globallyEnabled;
+      renderReminders();
+    } catch (error) { showNotice(error.message, true); }
+  }
+
+  function openForm(reminder = null) {
+    editingReminderId = reminder?.id || null;
+    document.querySelector('#judulForm').textContent = reminder ? 'Edit pengingat' : 'Tambah pengingat';
+    document.querySelector('#namaPengingat').value = reminder?.name || '';
+    document.querySelector('#jadwalCron').value = reminder?.cron || '30 14 * * 1-5';
+    document.querySelector('#isiPengingat').value = reminder?.text || '';
+    document.querySelector('#pengingatAktif').checked = reminder?.enabled ?? true;
+    formPanel.hidden = false;
+    document.querySelector('#namaPengingat').focus();
+    formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function saveReminder(reminderData) {
+    try {
+      const reminderId = reminderData.id || editingReminderId;
+      await callApi(reminderId ? `/api/reminders/${encodeURIComponent(reminderId)}` : '/api/reminders', {
+        method: reminderId ? 'PUT' : 'POST', body: JSON.stringify(reminderData)
+      });
+      formPanel.hidden = true; reminderForm.reset(); editingReminderId = null;
+      showNotice('Pengingat berhasil disimpan. Jadwal langsung diperbarui.');
+      await loadReminders();
+    } catch (error) { showNotice(error.message, true); }
+  }
+
+  async function deleteReminder(reminder) {
+    if (!confirm(`Hapus pengingat “${reminder.name}”?`)) return;
+    try {
+      await callApi(`/api/reminders/${encodeURIComponent(reminder.id)}`, { method: 'DELETE' });
+      showNotice('Pengingat dihapus.'); await loadReminders();
+    } catch (error) { showNotice(error.message, true); }
+  }
+
+  reminderForm.addEventListener('submit', event => {
+    event.preventDefault();
+    void saveReminder({
+      name: document.querySelector('#namaPengingat').value,
+      cron: document.querySelector('#jadwalCron').value,
+      text: document.querySelector('#isiPengingat').value,
+      enabled: document.querySelector('#pengingatAktif').checked
+    });
+  });
+  document.querySelector('#tambahPengingat').addEventListener('click', () => openForm());
+  document.querySelector('#tutupForm').addEventListener('click', () => { formPanel.hidden = true; });
+  document.querySelector('#batalForm').addEventListener('click', () => { formPanel.hidden = true; });
+  document.querySelector('#statusGlobal').addEventListener('change', async event => {
+    try {
+      await callApi('/api/reminders/settings', { method: 'PATCH', body: JSON.stringify({ enabled: event.target.checked }) });
+      showNotice('Status pengiriman diperbarui.');
+    } catch (error) {
+      event.target.checked = !event.target.checked;
+      showNotice(error.message, true);
+    }
+  });
+  void loadReminders();
+</script>
+</body>
+</html>

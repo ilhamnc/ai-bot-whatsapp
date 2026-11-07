@@ -1,4 +1,4 @@
-﻿// Layanan AI: provider, fallback model, antrean permintaan, dan status kuota.
+// Layanan AI: antrean, pembatasan sementara, adapter provider, dan pemilihan model cadangan.
 import { GoogleGenAI } from '@google/genai';
 import {
   AI_API_KEY, AI_BASE_URL, AI_MODELS, AI_PROVIDER, TZ, MAX_MODEL_PER_REQUEST
@@ -14,6 +14,7 @@ let geminiClient;
 export const AI_PROVIDER_NAME = AI_PROVIDER === 'gemini' ? 'Gemini' : 'OpenAI-compatible';
 export const DAILY_LIMIT_MESSAGE = 'Batas penggunaan AI hari ini sudah tercapai. Coba lagi setelah kuota layanan direset.';
 
+// Membatasi satu permintaan AI aktif agar memori bersama tidak berubah bersamaan.
 export function runAiJob(task) {
   return new Promise((resolve, reject) => {
     const start = () => {
@@ -32,7 +33,7 @@ function todayInPacific() {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit'
   }).formatToParts(new Date());
-  const get = type => parts.find(part => part.type === type)?.value || '';
+  const get = type => parts.find(bagian => bagian.type === type)?.value || '';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
@@ -51,7 +52,7 @@ function errorInfo(error) {
     || Number(raw.match(/\b(400|401|403|404|408|429|500|502|503|504)\b/)?.[1] || 0);
   const daily = code === 429 && /(?:per[ _-]?day|requests? per day|tokens? per day|\brpd\b|daily|quota_exceeded)/i.test(raw)
     && !/(?:per[ _-]?minute|\brpm\b|\btpm\b)/i.test(raw);
-  return { code, daily, raw };
+  return { code: code, daily: daily, raw: raw };
 }
 
 export function describeAiError(error) {
@@ -86,7 +87,7 @@ function geminiOptions(model, config, attempt) {
     : { thinkingLevel: model === 'gemini-3.8-flash' ? 'low' : 'minimal' };
   return {
     ...config,
-    thinkingConfig,
+    thinkingConfig: thinkingConfig,
     httpOptions: {
       ...config.httpOptions,
       timeout: attempt === 1 ? (config.httpOptions?.timeout ?? 18000) : 12000,
@@ -96,7 +97,7 @@ function geminiOptions(model, config, attempt) {
 }
 
 function getTextParts(parts = []) {
-  return parts.map(part => typeof part === 'string' ? part : part?.text || '').join('');
+  return parts.map(bagian => typeof bagian === 'string' ? bagian : bagian?.text || '').join('');
 }
 
 function toOpenAiMessages(contents, systemInstruction) {
@@ -108,7 +109,7 @@ function toOpenAiMessages(contents, systemInstruction) {
     for (const item of contents || []) {
       const role = item.role === 'model' || item.role === 'assistant' ? 'assistant' : 'user';
       const content = Array.isArray(item.parts) ? getTextParts(item.parts) : String(item.content || '');
-      if (content) messages.push({ role, content });
+      if (content) messages.push({ role: role, content: content });
     }
   }
   return messages;
@@ -116,7 +117,11 @@ function toOpenAiMessages(contents, systemInstruction) {
 
 async function generateWithGemini(model, contents, config, attempt) {
   geminiClient ||= new GoogleGenAI({ apiKey: AI_API_KEY });
-  return geminiClient.models.generateContent({ model, contents, config: geminiOptions(model, config, attempt) });
+  return geminiClient.models.generateContent({
+    model: model,
+    contents: contents,
+    config: geminiOptions(model, config, attempt)
+  });
 }
 
 async function generateWithOpenAiCompatible(model, contents, config) {
@@ -125,14 +130,14 @@ async function generateWithOpenAiCompatible(model, contents, config) {
     headers: { authorization: `Bearer ${AI_API_KEY}`, 'content-type': 'application/json' },
     signal: AbortSignal.timeout(config.httpOptions?.timeout ?? 18000),
     body: JSON.stringify({
-      model,
+      model: model,
       messages: toOpenAiMessages(contents, config.systemInstruction),
       max_tokens: config.maxOutputTokens ?? 4000
     })
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload.error?.message || `AI service returned HTTP ${response.status}`);
+    const error = new Error(payload.error?.message || `Layanan AI mengembalikan HTTP ${response.status}`);
     error.status = response.status;
     throw error;
   }
@@ -147,7 +152,8 @@ async function generateWithOpenAiCompatible(model, contents, config) {
   };
 }
 
-export async function generateWithFallback({ contents, config = {}, purpose = 'chat' }) {
+// Mencoba model sesuai urutan dan melewati model yang sedang jeda atau terkena batas harian.
+export async function generateWithFallback({ contents: contents, config: config = {}, purpose: purpose = 'chat' }) {
   let lastError;
   let attempted = 0;
   for (const model of AI_MODELS) {
@@ -158,11 +164,11 @@ export async function generateWithFallback({ contents, config = {}, purpose = 'c
       const result = AI_PROVIDER === 'gemini'
         ? await generateWithGemini(model, contents, config, attempted)
         : await generateWithOpenAiCompatible(model, contents, config);
-      if (String(result?.text || '').trim()) {
-        if (purpose in lastSuccessfulModel) lastSuccessfulModel[purpose] = { model, at: Date.now() };
+      if (String(result?.text || '').trim() && purpose in lastSuccessfulModel) {
+        lastSuccessfulModel[purpose] = { model: model, at: Date.now() };
       }
       console.log(`[AI] ${purpose}: berhasil dengan ${model} (${AI_PROVIDER_NAME})`);
-      return { result, model };
+      return { result: result, model: model };
     } catch (error) {
       lastError = error;
       const { code, daily, raw } = errorInfo(error);
@@ -188,4 +194,3 @@ export async function generateWithFallback({ contents, config = {}, purpose = 'c
   lastError.allModelsUnavailable = allUnavailable;
   throw lastError;
 }
-

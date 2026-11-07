@@ -54,7 +54,7 @@ Wants=network-online.target
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/NAMA-REPO
-ExecStart=/usr/bin/node /home/ubuntu/NAMA-REPO/bot.js
+ExecStart=/usr/bin/node /home/ubuntu/NAMA-REPO/server.js
 Restart=always
 RestartSec=10
 

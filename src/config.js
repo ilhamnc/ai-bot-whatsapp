@@ -28,9 +28,10 @@ export const MAX_MODEL_PER_REQUEST = Math.max(1, Math.min(7, Number(process.env.
 export const stateDir = path.resolve(process.env.BOT_STATE_DIR?.trim() || path.join(APP_DIR, '.state'));
 export const authDir = path.resolve(process.env.WA_AUTH_DIR?.trim() || path.join(APP_DIR, '.wwebjs_auth'));
 export const stateFile = path.join(stateDir, 'reminder.json');
+export const remindersFile = path.join(stateDir, 'reminders.json');
 export const messageFile = path.join(APP_DIR, 'reminder.txt');
-export const fileMemoriAi = path.join(stateDir, 'ai-memory.json');
-export const fileIdMentionBot = path.join(stateDir, 'bot-mention-ids.json');
+export const aiMemoryFile = path.join(stateDir, 'ai-memory.json');
+export const botMentionIdsFile = path.join(stateDir, 'bot-mention-ids.json');
 
 const defaultWindowsChrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||

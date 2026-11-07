@@ -11,19 +11,27 @@ src/
   config.js                     # Environment, validasi, dan lokasi penyimpanan
   routes/
     messageRoutes.js            # Mendaftarkan route event pesan WhatsApp
+    dashboardRoutes.js          # Server HTTP dashboard reminder lokal
   controllers/
     messageController.js        # Perintah grup dan alur respons pesan
+    dashboardController.js      # API pengelolaan reminder
   services/
     aiService.js                # Provider AI, fallback model, antrean, dan kuota
+    reminderScheduler.js        # Cron job dinamis untuk setiap reminder
   models/
     memoryModel.js              # Penyimpanan konteks dan ringkasan percakapan
-    reminderModel.js            # Status serta pengiriman reminder
+    reminderModel.js            # Data reminder dan pengiriman pesan
   views/
-    README.md                   # Titik awal untuk template dashboard mendatang
+    reminders.html              # UI tambah, edit, aktifkan, dan hapus reminder
 reminder.txt                    # Isi reminder yang dibaca saat akan dikirim
 ```
 
-Aplikasi saat ini adalah bot WhatsApp berbasis terminal, jadi folder `views` disiapkan untuk antarmuka edit konfigurasi di masa mendatang dan belum menyajikan halaman web.
+Aplikasi menyediakan dashboard reminder di `http://127.0.0.1:3030` saat bot berjalan. Dashboard hanya menerima koneksi lokal. Jika bot berjalan di server, gunakan SSH tunnel untuk membukanya dengan aman.
+
+Saat pertama kali dijalankan, isi `reminder.txt` dan jadwal lama Senin–Jumat pukul 14.30 WIB otomatis menjadi reminder default. Perubahan dashboard disimpan di `.state/reminders.json`; file lama `reminder.txt` tidak dihapus.
+
+Dashboard dapat menambah, mengedit, mengaktifkan/nonaktifkan, dan menghapus reminder. Setiap reminder mempunyai jadwal cron dan isi pesan sendiri. Zona waktunya `Asia/Jakarta`. Contoh cron: `30 14 * * 1-5` berarti Senin–Jumat pukul 14.30.
+
 ## Menyiapkan bot
 
 1. Pasang Node.js 22 atau lebih baru dan Chrome/Chromium.
@@ -32,6 +40,8 @@ Aplikasi saat ini adalah bot WhatsApp berbasis terminal, jadi folder `views` dis
 4. Jalankan `npm start`, lalu pindai QR melalui WhatsApp â†’ Perangkat tertaut.
 5. Di grup tujuan, kirim `!idgrup`. Salin ID dari terminal ke `WA_GROUP_ID`, lalu mulai ulang bot.
 6. Kirim `!myid`. Masukkan ID dari terminal ke `BOT_ADMIN_IDS`, lalu mulai ulang bot.
+
+Saat mengembangkan kode, jalankan `npm run dev`. Nodemon akan memulai ulang bot ketika file program atau `.env` disimpan. Pengaturan pemantauan berada di `package.json` dan mengabaikan data sesi serta `.state` agar perubahan data runtime tidak memicu restart.
 
 Contoh Gemini:
 
@@ -59,7 +69,7 @@ AI_FALLBACK_MODELS=gpt-4o-mini
 | Perintah | Kegunaan |
 |---|---|
 | `!ai pertanyaan` atau `@Bot Saya pertanyaan` | Bertanya ke AI |
-| `!jadwal`, `!status`, `!model`, `!memori` | Melihat status bot dan konteks |
+| `!jadwal`, `!status`, `!model`, `!memori` | Melihat status bot dan semua jadwal reminder |
 | `!help` | Daftar perintah |
 | `!idgrup`, `!myid` | Menampilkan ID di terminal bot |
 | `!reminder on` / `!reminder off` | Mengubah status reminder; operator saja |
@@ -67,7 +77,7 @@ AI_FALLBACK_MODELS=gpt-4o-mini
 | `!resetai` | Mengosongkan memori AI; operator saja |
 | `!daftarbot @Bot Saya` | Mengaktifkan mention bot; operator saja |
 
-Tuliskan `@all` atau `@semua` di `reminder.txt` untuk menyebut semua anggota. Perintah uji mengirim pesan sungguhan ke grup terpilih.
+Tuliskan `@all` atau `@semua` pada isi reminder untuk menyebut semua anggota. Perintah uji mengirim reminder aktif pertama sungguhan ke grup terpilih.
 
 ## Data dan deployment
 
