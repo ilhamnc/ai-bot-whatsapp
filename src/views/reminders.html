@@ -17,13 +17,14 @@
     .kartu,.panel-form { background:linear-gradient(145deg,#1a211c,#151a16); border:1px solid var(--garis); border-radius:16px; padding:14px; margin:8px 0; box-shadow:0 12px 35px #0002; }
     .kepala-kartu { align-items:flex-start } .kepala-kartu h2 { overflow-wrap:anywhere } .lencana { display:inline-flex; padding:4px 9px; border-radius:999px; color:var(--hijau); background:#193a26; font-size:12px; white-space:nowrap } .lencana.nonaktif { color:var(--redup); background:#303633 }
     .metadata { display:flex; flex-wrap:wrap; gap:8px 16px; color:var(--redup); font-size:13px; margin:6px 0 9px } .pratinjau { white-space:pre-wrap; overflow-wrap:anywhere; color:#d7dfd8; background:#111512; border:1px solid #262e28; border-radius:10px; padding:10px; max-height:100px; overflow:auto; }
-    .daftar-tombol { justify-content:flex-start; margin-top:15px } .pengisi { flex:1 } .panel-form[hidden] { display:none } .kepala-form { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
+    .daftar-tombol { justify-content:flex-start; margin-top:15px } .pengisi { flex:1 } .kepala-form { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
+    dialog.panel-form { width:min(900px,calc(100% - 24px)); max-height:90vh; overflow:auto; margin:auto; color:var(--teks); } dialog.panel-form::backdrop { background:#050806c9; backdrop-filter:blur(3px); } dialog.panel-form[open] { display:block; }
     .kolom { display:grid; grid-template-columns:1fr 1fr; gap:8px 14px } label { display:block; color:#d9e1da; font-size:13px; margin-bottom:5px } input[type=text],input[type=time],textarea { width:100%; color:var(--teks); background:#101411; border:1px solid var(--garis); border-radius:9px; padding:8px 10px; outline:none } input:focus,textarea:focus { border-color:var(--hijau) } textarea { min-height:88px; resize:vertical } .kolom-field { margin-bottom:6px } .lebar { grid-column:1/-1 } .options { display:flex; align-items:center; gap:9px; color:var(--redup); font-size:13px } .options input { accent-color:#9bd9a1; width:17px; height:17px }
     .hari-pilihan { display:flex; flex-wrap:wrap; gap:8px; } .hari-pilihan label { margin:0; } .hari-pilihan input { position:absolute; opacity:0; } .hari-pilihan span { display:block; min-width:46px; padding:8px 10px; text-align:center; border:1px solid var(--garis); border-radius:9px; color:var(--redup); cursor:pointer; } .hari-pilihan input:checked + span { color:#102016; background:var(--hijau); border-color:var(--hijau); font-weight:700; } .hari-pilihan input:focus-visible + span { outline:2px solid var(--teks); outline-offset:2px; }
     .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; margin:0; min-width:104px; } .switch input { position:absolute; width:1px; height:1px; opacity:0; } .switch-track { width:48px; height:28px; border:1px solid #59645b; border-radius:999px; background:#303633; transition:background .18s,border-color .18s; } .switch-track::before { content:''; display:block; width:20px; height:20px; margin:3px; border-radius:50%; background:#d3dbd4; transition:transform .18s,background .18s; } .switch input:checked + .switch-track { background:#397748; border-color:#65a775; } .switch input:checked + .switch-track::before { transform:translateX(20px); background:#fff; } .switch input:focus-visible + .switch-track { outline:2px solid var(--teks); outline-offset:3px; } .switch-label { color:var(--redup); font-size:13px; }
     .bantuan { margin-top:4px; font-size:12px; color:var(--redup) } .kosong { text-align:center; padding:20px; color:var(--redup); border:1px dashed var(--garis); border-radius:14px }
     .times-list { display:flex; flex-wrap:wrap; gap:7px; } .time-row { display:flex; align-items:center; gap:5px; width:calc(50% - 4px); min-width:140px; } .time-row input { flex:1; width:auto; min-width:0; } .time-row button { padding:5px 9px; }
-    .shalat-panel { margin-top:14px } .shalat-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; } .shalat-head p { font-size:13px; } .shalat-fields { margin-top:14px; } .shalat-messages { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; margin-top:12px; } .shalat-message textarea { min-height:58px; } .shalat-result { margin-top:10px; padding:8px 10px; border-radius:9px; background:#111512; border:1px solid #262e28; font-size:13px; color:var(--redup); } .shalat-result[hidden],.shalat-fields[hidden] { display:none; }
+    .shalat-panel { margin-top:14px } .shalat-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; } .shalat-head p { font-size:13px; } .shalat-head .daftar-tombol { margin:0; } .shalat-messages { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; margin-top:12px; } .shalat-message textarea { min-height:58px; } .shalat-result { margin-top:10px; padding:8px 10px; border-radius:9px; background:#111512; border:1px solid #262e28; font-size:13px; color:var(--redup); } .info-pengaturan { color:var(--redup); font-size:13px; } .bilah-atas #bukaPengaturanLokasi { margin-left:auto; }
     @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom,.shalat-messages { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
@@ -39,10 +40,10 @@
   </section>
   <section class="bilah-atas">
     <label class="options"><input id="statusGlobal" type="checkbox"><span>Pengiriman pengingat diaktifkan</span></label>
-    <span id="zonaWaktu" class="bantuan"></span>
+    <button id="bukaPengaturanLokasi" type="button" class="info-pengaturan">📍 Jakarta, Indonesia · Asia/Jakarta · Pengaturan</button>
   </section>
   <div id="pesanStatus" class="pesan-status" role="status" aria-live="polite"></div>
-  <section id="formPanel" class="panel-form" hidden>
+  <dialog id="formPanel" class="panel-form" aria-labelledby="judulForm">
     <div class="kepala-form"><h2 id="judulForm">Tambah pengingat</h2><button id="tutupForm" type="button">Tutup</button></div>
     <form id="formPengingat">
       <div class="kolom">
@@ -62,21 +63,31 @@
       </div>
       <div class="daftar-tombol"><button class="utama" type="submit">Simpan pengingat</button><button id="batalForm" type="button">Batal</button></div>
     </form>
-  </section>
-  <section class="panel-form shalat-panel" aria-labelledby="judulShalat">
+  </dialog>
+  <section class="kartu shalat-panel" aria-labelledby="judulShalat">
     <div class="shalat-head">
-      <div><h2 id="judulShalat">Jadwal shalat</h2><p>Waktu harian menyesuaikan kota. Menggunakan perhitungan Kemenag RI.</p></div>
-      <label class="switch"><input id="shalatAktif" type="checkbox" aria-label="Aktifkan pengingat jadwal shalat"><span class="switch-track"></span><span id="shalatStatus" class="switch-label">Jadwal shalat: Nonaktif</span></label>
-    </div>
-    <div id="shalatFields" class="shalat-fields">
-      <div class="kolom">
-        <div class="kolom-field"><label for="shalatKota">Kota/kabupaten</label><input id="shalatKota" type="text" maxlength="100" required placeholder="Contoh: Jakarta"></div>
-        <div class="kolom-field"><label for="shalatNegara">Negara</label><input id="shalatNegara" type="text" maxlength="100" required placeholder="Contoh: Indonesia"></div>
-        <div class="kolom-field"><label for="shalatZona">Zona waktu</label><input id="shalatZona" type="text" maxlength="80" required placeholder="Asia/Jakarta"></div>
-        <div class="kolom-field"><label>&nbsp;</label><button id="cekJadwalShalat" type="button">Cek jadwal hari ini</button></div>
+      <div><h2 id="judulShalat">Jadwal shalat</h2><p>Pengingat Subuh, Dzuhur, Asar, Maghrib, dan Isya.</p></div>
+      <div class="daftar-tombol">
+        <label class="switch"><input id="shalatAktif" type="checkbox" aria-label="Aktifkan pengingat jadwal shalat"><span class="switch-track"></span><span id="shalatStatus" class="switch-label">Nonaktif</span></label>
+        <button id="bukaDetailShalat" type="button">Detail &amp; edit pesan</button>
       </div>
-      <div id="pratinjauShalat" class="shalat-result" aria-live="polite" hidden></div>
+    </div>
+  </section>
+  <dialog id="dialogDetailShalat" class="panel-form" aria-labelledby="judulDetailShalat">
+      <div class="kepala-form"><div><h2 id="judulDetailShalat">Detail jadwal shalat</h2><p>Ubah pesan untuk tiap waktu shalat.</p></div><button class="tutupDialogShalat" type="button">Tutup</button></div>
       <div class="bantuan">AI akan memparafrasekan pesan dengan gaya santai dan singkat. Jika AI atau kuota tidak tersedia, teks yang kamu isi tetap dikirim.</div>
+      <div class="kolom-field">
+        <label>Waktu shalat yang diaktifkan</label>
+        <label class="options"><input id="semuaWaktuShalat" type="checkbox"><span>Aktifkan semua waktu shalat</span></label>
+        <div id="pilihanWaktuShalat" class="hari-pilihan">
+          <label><input class="waktuShalatPilihan" type="checkbox" value="Fajr"><span>Subuh</span></label>
+          <label><input class="waktuShalatPilihan" type="checkbox" value="Dhuhr"><span>Dzuhur</span></label>
+          <label><input class="waktuShalatPilihan" type="checkbox" value="Asr"><span>Asar</span></label>
+          <label><input class="waktuShalatPilihan" type="checkbox" value="Maghrib"><span>Maghrib</span></label>
+          <label><input class="waktuShalatPilihan" type="checkbox" value="Isha"><span>Isya</span></label>
+        </div>
+        <div class="bantuan">Matikan pilihan semua untuk memilih waktu tertentu.</div>
+      </div>
       <div class="shalat-messages">
         <div class="shalat-message"><label for="pesanSubuh">Subuh</label><textarea id="pesanSubuh" maxlength="10000" required></textarea></div>
         <div class="shalat-message"><label for="pesanDzuhur">Dzuhur</label><textarea id="pesanDzuhur" maxlength="10000" required></textarea></div>
@@ -84,9 +95,23 @@
         <div class="shalat-message"><label for="pesanMaghrib">Maghrib</label><textarea id="pesanMaghrib" maxlength="10000" required></textarea></div>
         <div class="shalat-message"><label for="pesanIsya">Isya</label><textarea id="pesanIsya" maxlength="10000" required></textarea></div>
       </div>
-      <div class="daftar-tombol"><button id="simpanShalat" class="utama" type="button">Simpan jadwal shalat</button></div>
+      <div id="pratinjauShalat" class="shalat-result" aria-live="polite" hidden></div>
+      <div class="daftar-tombol"><button id="cekJadwalShalat" type="button">Cek jadwal hari ini</button><button id="simpanShalat" class="utama" type="button">Simpan pesan</button><button class="tutupDialogShalat" type="button">Batal</button></div>
+  </dialog>
+  <dialog id="dialogPengaturanLokasi" class="panel-form" aria-labelledby="judulPengaturanLokasi">
+    <div class="kepala-form"><div><h2 id="judulPengaturanLokasi">Pengaturan lokasi</h2><p>Lokasi dan zona waktu dipakai untuk menghitung jadwal shalat.</p></div><button class="tutupPengaturanLokasi" type="button">Tutup</button></div>
+    <div class="kolom">
+      <div class="kolom-field"><label for="shalatNegara">Negara</label><select id="shalatNegara"><option>Indonesia</option><option>Singapura</option><option>Malaysia</option><option>Thailand</option><option>Jepang</option><option>Arab Saudi</option><option>Uni Emirat Arab</option><option>Inggris</option><option>Australia</option><option>Amerika Serikat</option></select></div>
+      <div class="kolom-field"><label for="shalatKota">Kota/kabupaten</label><select id="shalatKota"></select></div>
+      <div class="kolom-field"><label for="shalatZona">Zona waktu</label><select id="shalatZona">
+        <option value="Asia/Jakarta">WIB — Asia/Jakarta</option><option value="Asia/Makassar">WITA — Asia/Makassar</option><option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
+        <option value="Asia/Singapore">UTC+08 — Asia/Singapore</option><option value="Asia/Kuala_Lumpur">UTC+08 — Asia/Kuala_Lumpur</option><option value="Asia/Bangkok">UTC+07 — Asia/Bangkok</option>
+        <option value="Asia/Tokyo">UTC+09 — Asia/Tokyo</option><option value="Asia/Riyadh">UTC+03 — Asia/Riyadh</option><option value="Asia/Dubai">UTC+04 — Asia/Dubai</option>
+        <option value="Europe/London">London — Europe/London</option><option value="Australia/Sydney">Australia Timur — Australia/Sydney</option><option value="America/New_York">Amerika Timur — America/New_York</option>
+      </select><div id="labelZonaIndonesia" class="bantuan"></div></div>
     </div>
-  </section>
+    <div class="daftar-tombol"><button id="simpanPengaturanLokasi" class="utama" type="button">Simpan pengaturan</button><button class="tutupPengaturanLokasi" type="button">Batal</button></div>
+  </dialog>
   <section id="reminders" aria-live="polite"></section>
 </main>
 <script>
@@ -99,6 +124,7 @@
   const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   let reminders = [];
   let prayerSettings = null;
+  let botTimezone = 'Asia/Jakarta';
   let editingReminderId = null;
   let hasUnconvertedCustomSchedule = false;
   let noticeTimer;
@@ -219,12 +245,12 @@
       card.append(cardHead);
       const metadata = document.createElement('div'); metadata.className = 'metadata';
       addText(metadata, 'span', `Jadwal: ${formatSchedule(reminder.cronExpressions || reminder.cron)}`);
-      addText(metadata, 'span', document.querySelector('#zonaWaktu').textContent);
+      addText(metadata, 'span', `Zona waktu bot: ${botTimezone}`);
       if (reminder.lastSentAt) addText(metadata, 'span', `Terakhir dikirim: ${new Date(reminder.lastSentAt).toLocaleString('id-ID')}`);
       card.append(metadata);
       addText(card, 'div', reminder.text, 'pratinjau');
       const actionButtons = document.createElement('div'); actionButtons.className = 'daftar-tombol';
-      const editButton = addText(actionButtons, 'button', 'Edit'); editButton.type = 'button'; editButton.addEventListener('click', () => openForm(reminder));
+      const editButton = addText(actionButtons, 'button', 'Detail & edit'); editButton.type = 'button'; editButton.addEventListener('click', () => openForm(reminder));
       const statusToggle = document.createElement('label'); statusToggle.className = 'switch';
       const statusInput = document.createElement('input'); statusInput.type = 'checkbox'; statusInput.checked = reminder.enabled;
       statusInput.setAttribute('aria-label', `${reminder.enabled ? 'Nonaktifkan' : 'Aktifkan'} ${reminder.name}`);
@@ -248,30 +274,35 @@
     try {
       const data = await callApi('/api/reminders');
       reminders = data.reminders;
-      document.querySelector('#zonaWaktu').textContent = `Zona waktu: ${data.timezone}`;
+      botTimezone = data.timezone;
       document.querySelector('#statusGlobal').checked = data.globallyEnabled;
       renderReminders();
     } catch (error) { showNotice(error.message, true); }
   }
 
   const prayerMessageFields = { Fajr: '#pesanSubuh', Dhuhr: '#pesanDzuhur', Asr: '#pesanAsar', Maghrib: '#pesanMaghrib', Isha: '#pesanIsya' };
+  const prayerTimeInputs = [...document.querySelectorAll('.waktuShalatPilihan')];
 
-  function readPrayerForm() {
-    return {
-      enabled: document.querySelector('#shalatAktif').checked,
-      city: document.querySelector('#shalatKota').value.trim(),
-      country: document.querySelector('#shalatNegara').value.trim(),
-      timezone: document.querySelector('#shalatZona').value.trim(),
-      messages: Object.fromEntries(Object.entries(prayerMessageFields).map(([key, selector]) => [key, document.querySelector(selector).value]))
-    };
+  function syncPrayerTimeSelection(selectedPrayers) {
+    const selected = new Set(selectedPrayers);
+    prayerTimeInputs.forEach(input => {
+      input.checked = selected.has(input.value);
+      input.disabled = selectedPrayers.length === prayerTimeInputs.length;
+    });
+    document.querySelector('#semuaWaktuShalat').checked = selectedPrayers.length === prayerTimeInputs.length;
   }
 
-  async function savePrayerSettings() {
+  async function savePrayerSettings(changes = {}) {
     try {
-      const result = await callApi('/api/prayer-reminder', { method: 'PUT', body: JSON.stringify(readPrayerForm()) });
+      const updatedSettings = { ...prayerSettings, ...changes, messages: changes.messages || prayerSettings.messages };
+      const result = await callApi('/api/prayer-reminder', { method: 'PUT', body: JSON.stringify(updatedSettings) });
       prayerSettings = result.settings;
+      document.querySelector('#shalatAktif').checked = prayerSettings.enabled;
+      document.querySelector('#shalatStatus').textContent = `Jadwal shalat: ${prayerSettings.enabled ? 'Aktif' : 'Nonaktif'}`;
+      document.querySelector('#bukaPengaturanLokasi').textContent = `📍 ${prayerSettings.city}, ${prayerSettings.country} · ${prayerSettings.timezone} · Pengaturan`;
       showNotice('Pengaturan jadwal shalat tersimpan.');
-    } catch (error) { showNotice(error.message, true); }
+      return true;
+    } catch (error) { showNotice(error.message, true); return false; }
   }
 
   async function loadPrayerSettings() {
@@ -284,13 +315,18 @@
       document.querySelector('#shalatNegara').value = settings.country;
       document.querySelector('#shalatZona').value = settings.timezone;
       for (const [key, selector] of Object.entries(prayerMessageFields)) document.querySelector(selector).value = settings.messages[key] || '';
+      syncPrayerTimeSelection(settings.enabledPrayers);
+      document.querySelector('#bukaPengaturanLokasi').textContent = `📍 ${settings.city}, ${settings.country} · ${settings.timezone} · Pengaturan`;
     } catch (error) { showNotice(error.message, true); }
   }
 
   async function showPrayerPreview() {
-    const form = readPrayerForm();
-    const query = new URLSearchParams({ city: form.city, country: form.country, timezone: form.timezone });
-    const previewElement = document.querySelector('#pratinjauShalat');
+    const query = new URLSearchParams({
+      city: document.querySelector('#shalatKota').value.trim(),
+      country: document.querySelector('#shalatNegara').value.trim(),
+      timezone: document.querySelector('#shalatZona').value.trim()
+    });
+    const previewElement = document.querySelector('#pratinjauPengaturan');
     previewElement.hidden = false;
     previewElement.textContent = 'Mengambil jadwal shalat hari ini...';
     try {
@@ -300,12 +336,54 @@
     } catch (error) { previewElement.textContent = error.message; }
   }
 
+  function openPrayerDetails() {
+    for (const [key, selector] of Object.entries(prayerMessageFields)) {
+      document.querySelector(selector).value = prayerSettings?.messages?.[key] || '';
+    }
+    syncPrayerTimeSelection(prayerSettings?.enabledPrayers || []);
+    document.querySelector('#dialogDetailShalat').showModal();
+  }
+
+  function openLocationSettings() {
+    if (prayerSettings) {
+      document.querySelector('#shalatKota').value = prayerSettings.city;
+      document.querySelector('#shalatNegara').value = prayerSettings.country;
+      document.querySelector('#shalatZona').value = prayerSettings.timezone;
+    }
+    document.querySelector('#dialogPengaturanLokasi').showModal();
+  }
+
   document.querySelector('#shalatAktif').addEventListener('change', event => {
     document.querySelector('#shalatStatus').textContent = `Jadwal shalat: ${event.target.checked ? 'Aktif' : 'Nonaktif'}`;
-    if (!event.target.checked) void savePrayerSettings();
+    void savePrayerSettings({ enabled: event.target.checked }).then(saved => {
+      if (!saved) event.target.checked = prayerSettings?.enabled || false;
+    });
   });
-  document.querySelector('#simpanShalat').addEventListener('click', () => void savePrayerSettings());
+  document.querySelector('#simpanShalat').addEventListener('click', async () => {
+    const messages = Object.fromEntries(Object.entries(prayerMessageFields).map(([key, selector]) => [key, document.querySelector(selector).value]));
+    const enabledPrayers = prayerTimeInputs.filter(input => input.checked).map(input => input.value);
+    if (await savePrayerSettings({ messages, enabledPrayers })) document.querySelector('#dialogDetailShalat').close();
+  });
+  document.querySelector('#semuaWaktuShalat').addEventListener('change', event => {
+    syncPrayerTimeSelection(event.target.checked ? prayerTimeInputs.map(input => input.value) : []);
+  });
+  prayerTimeInputs.forEach(input => input.addEventListener('change', () => {
+    const enabledPrayers = prayerTimeInputs.filter(item => item.checked).map(item => item.value);
+    syncPrayerTimeSelection(enabledPrayers);
+  }));
   document.querySelector('#cekJadwalShalat').addEventListener('click', () => void showPrayerPreview());
+  document.querySelector('#bukaPengaturanLokasi').addEventListener('click', openLocationSettings);
+  document.querySelector('#bukaDetailShalat').addEventListener('click', openPrayerDetails);
+  document.querySelectorAll('.tutupPengaturanLokasi').forEach(button => button.addEventListener('click', () => document.querySelector('#dialogPengaturanLokasi').close()));
+  document.querySelectorAll('.tutupDialogShalat').forEach(button => button.addEventListener('click', () => document.querySelector('#dialogDetailShalat').close()));
+  document.querySelector('#simpanPengaturanLokasi').addEventListener('click', async () => {
+    const location = {
+      city: document.querySelector('#shalatKota').value.trim(),
+      country: document.querySelector('#shalatNegara').value.trim(),
+      timezone: document.querySelector('#shalatZona').value.trim()
+    };
+    if (await savePrayerSettings(location)) document.querySelector('#dialogPengaturanLokasi').close();
+  });
 
   // Periksa status koneksi berkala supaya QR terbaru langsung terlihat di halaman.
   async function loadConnectionStatus() {
@@ -344,9 +422,8 @@
     schedule.times.forEach(time => addTimeInput(time));
     document.querySelector('#isiPengingat').value = reminder?.text || '';
     document.querySelector('#pengingatAktif').checked = reminder?.enabled ?? true;
-    formPanel.hidden = false;
+    formPanel.showModal();
     document.querySelector('#namaPengingat').focus();
-    formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function saveReminder(reminderData) {
@@ -355,7 +432,7 @@
       await callApi(reminderId ? `/api/reminders/${encodeURIComponent(reminderId)}` : '/api/reminders', {
         method: reminderId ? 'PUT' : 'POST', body: JSON.stringify(reminderData)
       });
-      formPanel.hidden = true; reminderForm.reset(); editingReminderId = null;
+      formPanel.close(); reminderForm.reset(); editingReminderId = null;
       showNotice('Pengingat berhasil disimpan. Jadwal langsung diperbarui.');
       await loadReminders();
     } catch (error) { showNotice(error.message, true); }
@@ -392,8 +469,8 @@
     document.querySelector('#scheduleWarning').hidden = true;
     addTimeInput();
   });
-  document.querySelector('#tutupForm').addEventListener('click', () => { formPanel.hidden = true; });
-  document.querySelector('#batalForm').addEventListener('click', () => { formPanel.hidden = true; });
+  document.querySelector('#tutupForm').addEventListener('click', () => formPanel.close());
+  document.querySelector('#batalForm').addEventListener('click', () => formPanel.close());
   reminderDayInputs.forEach(input => {
     input.addEventListener('change', () => {
       hasUnconvertedCustomSchedule = false;

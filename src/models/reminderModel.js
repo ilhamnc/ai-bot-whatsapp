@@ -24,52 +24,54 @@ export function saveState() {
   fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf8');
 }
 
-const DEFAULT_PRAYER_MESSAGES = {
-  Fajr: 'Subuh dulu, yuk. Semoga hari ini lancar dan penuh berkah 🤲',
-  Dhuhr: 'Waktunya Dzuhur, rehat sebentar buat salat ya 🤲',
-  Asr: 'Jangan kelewat Asar ya, sempatkan salat dulu ✨',
-  Maghrib: 'Maghrib sudah masuk, yuk salat dulu 🌅',
-  Isha: 'Yuk tutup hari dengan salat Isya. Semoga istirahatmu nyaman 🤲'
-};
+const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
 function getPrayerSettings() {
   const saved = state.prayerReminder || {};
+  const enabledPrayers = Array.isArray(saved.enabledPrayers)
+    ? saved.enabledPrayers.filter(prayer => PRAYER_KEYS.includes(prayer))
+    : PRAYER_KEYS;
   return {
     enabled: saved.enabled === true,
     city: String(saved.city || 'Jakarta'),
     country: String(saved.country || 'Indonesia'),
     timezone: String(saved.timezone || 'Asia/Jakarta'),
-    messages: { ...DEFAULT_PRAYER_MESSAGES, ...(saved.messages || {}) },
+    enabledPrayers,
+    messages: Object.fromEntries(PRAYER_KEYS.map(prayer => [prayer, String(saved.messages?.[prayer] || '')])),
     sent: saved.sent && typeof saved.sent === 'object' ? saved.sent : {}
   };
 }
 
 export function getPrayerReminderSettings() {
   const { sent, ...settings } = getPrayerSettings();
-  return { ...settings, messages: { ...settings.messages } };
+  return { ...settings, enabledPrayers: [...settings.enabledPrayers], messages: { ...settings.messages } };
 }
 
 export function savePrayerReminderSettings(input) {
   const city = String(input?.city || '').trim();
   const country = String(input?.country || '').trim();
   const timezone = String(input?.timezone || '').trim();
+  const current = getPrayerSettings();
   const messages = {};
   if (!city || city.length > 100 || !country || country.length > 100) {
     throw new Error('Nama kota dan negara wajib diisi (maksimal 100 karakter).');
   }
   try { new Intl.DateTimeFormat('id-ID', { timeZone: timezone }); }
   catch { throw new Error('Zona waktu tidak valid. Contoh: Asia/Jakarta.'); }
-  for (const prayer of Object.keys(DEFAULT_PRAYER_MESSAGES)) {
-    const message = String(input?.messages?.[prayer] || '').trim();
-    if (!message || message.length > MAX_TEXT) throw new Error(`Pesan ${prayer} harus diisi (maksimal ${MAX_TEXT} karakter).`);
+  for (const prayer of PRAYER_KEYS) {
+    const message = String(input?.messages?.[prayer] ?? current.messages[prayer]).trim();
+    if (message.length > MAX_TEXT) throw new Error(`Pesan ${prayer} maksimal ${MAX_TEXT} karakter.`);
     messages[prayer] = message;
   }
-  const current = getPrayerSettings();
+  const enabledPrayers = Array.isArray(input?.enabledPrayers)
+    ? [...new Set(input.enabledPrayers.filter(prayer => PRAYER_KEYS.includes(prayer)))]
+    : current.enabledPrayers;
   state.prayerReminder = {
     enabled: input.enabled === true,
     city,
     country,
     timezone,
+    enabledPrayers,
     messages,
     // Pengaturan lokasi baru perlu mengirim ulang jadwal hari ini.
     sent: current.city === city && current.country === country && current.timezone === timezone ? current.sent : {}

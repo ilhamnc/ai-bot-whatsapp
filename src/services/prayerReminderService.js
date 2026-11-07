@@ -3,7 +3,7 @@ import cron from 'node-cron';
 import { TARGET_GROUP } from '../config.js';
 import {
   createReminderVariant, getPrayerReminderSettings, markPrayerReminderSent,
-  prayerReminderAlreadySent, state
+  prayerReminderAlreadySent, sendReminderWithAllTag, state
 } from '../models/reminderModel.js';
 
 const PRAYER_TIMES = [
@@ -86,14 +86,19 @@ async function checkPrayerReminders(client, getIsReady) {
   const currentTime = `${local.hour}:${local.minute}`;
 
   for (const prayer of PRAYER_TIMES) {
+    if (!settings.enabledPrayers.includes(prayer.key)) continue;
     if (schedule.timings[prayer.key] !== currentTime) continue;
     const sentKey = `${localDate}:${prayer.key}`;
     if (prayerReminderAlreadySent(sentKey)) continue;
 
     const originalText = settings.messages[prayer.key];
+    if (!originalText.trim()) {
+      console.warn(`[SHALAT] Pesan ${prayer.name} kosong; pengingat dilewati.`);
+      continue;
+    }
     const message = await createReminderVariant(originalText, `Pengingat shalat ${prayer.name}`);
     try {
-      await client.sendMessage(TARGET_GROUP, message);
+      await sendReminderWithAllTag(client, TARGET_GROUP, message);
       markPrayerReminderSent(sentKey);
       console.log(`[SHALAT] Pengingat ${prayer.name} terkirim pukul ${currentTime} (${settings.city}, ${settings.timezone}).`);
     } catch (error) {
