@@ -7,19 +7,22 @@
   <style>
     :root { color-scheme: dark; --latar:#101311; --panel:#191e1a; --panel2:#202721; --garis:#303a32; --teks:#edf4ed; --redup:#a0ada2; --hijau:#a7e3ad; --merah:#ffb4ab; }
     * { box-sizing:border-box } body { margin:0; background:radial-gradient(ellipse at 20% 0%,#1b2a20 0,transparent 45%),var(--latar); color:var(--teks); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
-    main { width:min(1020px,100% - 32px); margin:42px auto 80px; } header { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:28px; }
+    main { width:min(1020px,100% - 32px); margin:22px auto 40px; } header { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:14px; }
     h1 { font-size:clamp(28px,4vw,40px); letter-spacing:-1px; margin:0 0 6px } h2 { margin:0; font-size:20px } p { margin:0; color:var(--redup) }
     button,input,textarea { font:inherit } button { border:1px solid var(--garis); background:var(--panel2); color:var(--teks); border-radius:10px; padding:10px 14px; cursor:pointer; }
     button:hover { border-color:#647667 } button.utama { color:#102016; background:var(--hijau); border-color:var(--hijau); font-weight:700 } button.hapus { color:var(--merah) }
     .bilah-atas,.kepala-kartu,.daftar-tombol { display:flex; align-items:center; justify-content:space-between; gap:12px } .bilah-atas { margin:22px 0 16px; flex-wrap:wrap }
     .pesan-status { min-height:24px; color:var(--hijau); margin:0 0 12px } .pesan-status.galat { color:var(--merah) }
     .koneksi { display:flex; align-items:center; gap:22px; } .koneksi img { width:min(240px,45vw); aspect-ratio:1; background:#fff; padding:8px; border-radius:10px; } .koneksi img[hidden] { display:none; } .koneksi-info { display:grid; gap:8px; } .koneksi-info p { max-width:540px; }
-    .kartu,.panel-form { background:linear-gradient(145deg,#1a211c,#151a16); border:1px solid var(--garis); border-radius:16px; padding:20px; margin:14px 0; box-shadow:0 12px 35px #0002; }
+    .kartu,.panel-form { background:linear-gradient(145deg,#1a211c,#151a16); border:1px solid var(--garis); border-radius:16px; padding:14px; margin:8px 0; box-shadow:0 12px 35px #0002; }
     .kepala-kartu { align-items:flex-start } .kepala-kartu h2 { overflow-wrap:anywhere } .lencana { display:inline-flex; padding:4px 9px; border-radius:999px; color:var(--hijau); background:#193a26; font-size:12px; white-space:nowrap } .lencana.nonaktif { color:var(--redup); background:#303633 }
-    .metadata { display:flex; flex-wrap:wrap; gap:8px 16px; color:var(--redup); font-size:13px; margin:10px 0 15px } .pratinjau { white-space:pre-wrap; overflow-wrap:anywhere; color:#d7dfd8; background:#111512; border:1px solid #262e28; border-radius:10px; padding:12px; max-height:130px; overflow:auto; }
+    .metadata { display:flex; flex-wrap:wrap; gap:8px 16px; color:var(--redup); font-size:13px; margin:6px 0 9px } .pratinjau { white-space:pre-wrap; overflow-wrap:anywhere; color:#d7dfd8; background:#111512; border:1px solid #262e28; border-radius:10px; padding:10px; max-height:100px; overflow:auto; }
     .daftar-tombol { justify-content:flex-start; margin-top:15px } .pengisi { flex:1 } .panel-form[hidden] { display:none } .kepala-form { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
-    .kolom { display:grid; grid-template-columns:1fr 1fr; gap:14px } label { display:block; color:#d9e1da; font-size:13px; margin-bottom:7px } input[type=text],textarea { width:100%; color:var(--teks); background:#101411; border:1px solid var(--garis); border-radius:9px; padding:11px 12px; outline:none } input:focus,textarea:focus { border-color:var(--hijau) } textarea { min-height:150px; resize:vertical } .kolom-field { margin-bottom:15px } .lebar { grid-column:1/-1 } .options { display:flex; align-items:center; gap:9px; color:var(--redup); font-size:13px } .options input { accent-color:#9bd9a1; width:17px; height:17px }
-    .bantuan { margin-top:7px; font-size:12px; color:var(--redup) } .kosong { text-align:center; padding:35px 20px; color:var(--redup); border:1px dashed var(--garis); border-radius:14px }
+    .kolom { display:grid; grid-template-columns:1fr 1fr; gap:8px 14px } label { display:block; color:#d9e1da; font-size:13px; margin-bottom:5px } input[type=text],input[type=time],textarea { width:100%; color:var(--teks); background:#101411; border:1px solid var(--garis); border-radius:9px; padding:8px 10px; outline:none } input:focus,textarea:focus { border-color:var(--hijau) } textarea { min-height:88px; resize:vertical } .kolom-field { margin-bottom:6px } .lebar { grid-column:1/-1 } .options { display:flex; align-items:center; gap:9px; color:var(--redup); font-size:13px } .options input { accent-color:#9bd9a1; width:17px; height:17px }
+    .hari-pilihan { display:flex; flex-wrap:wrap; gap:8px; } .hari-pilihan label { margin:0; } .hari-pilihan input { position:absolute; opacity:0; } .hari-pilihan span { display:block; min-width:46px; padding:8px 10px; text-align:center; border:1px solid var(--garis); border-radius:9px; color:var(--redup); cursor:pointer; } .hari-pilihan input:checked + span { color:#102016; background:var(--hijau); border-color:var(--hijau); font-weight:700; } .hari-pilihan input:focus-visible + span { outline:2px solid var(--teks); outline-offset:2px; }
+    .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; margin:0; min-width:104px; } .switch input { position:absolute; width:1px; height:1px; opacity:0; } .switch-track { width:48px; height:28px; border:1px solid #59645b; border-radius:999px; background:#303633; transition:background .18s,border-color .18s; } .switch-track::before { content:''; display:block; width:20px; height:20px; margin:3px; border-radius:50%; background:#d3dbd4; transition:transform .18s,background .18s; } .switch input:checked + .switch-track { background:#397748; border-color:#65a775; } .switch input:checked + .switch-track::before { transform:translateX(20px); background:#fff; } .switch input:focus-visible + .switch-track { outline:2px solid var(--teks); outline-offset:3px; } .switch-label { color:var(--redup); font-size:13px; }
+    .bantuan { margin-top:4px; font-size:12px; color:var(--redup) } .kosong { text-align:center; padding:20px; color:var(--redup); border:1px dashed var(--garis); border-radius:14px }
+    .times-list { display:flex; flex-wrap:wrap; gap:7px; } .time-row { display:flex; align-items:center; gap:5px; width:calc(50% - 4px); min-width:140px; } .time-row input { flex:1; width:auto; min-width:0; } .time-row button { padding:5px 9px; }
     @media(max-width:620px) { main { margin-top:24px } header { flex-direction:column } .kolom { grid-template-columns:1fr } .lebar { grid-column:auto } .kartu,.panel-form { padding:15px } .koneksi { align-items:flex-start; flex-direction:column; } .koneksi img { width:min(240px,100%); } }
   </style>
 </head>
@@ -43,7 +46,16 @@
     <form id="formPengingat">
       <div class="kolom">
         <div class="kolom-field"><label for="namaPengingat">Nama pengingat</label><input id="namaPengingat" type="text" maxlength="80" required placeholder="Contoh: Pengingat rapat"></div>
-        <div class="kolom-field"><label for="jadwalCron">Jadwal cron</label><input id="jadwalCron" type="text" required placeholder="30 14 * * 1-5"><div class="bantuan">Format 5 bagian: menit jam tanggal bulan hari. Zona waktu mengikuti bot.</div></div>
+        <div class="kolom-field"><label>Hari pengingat</label><div id="reminderDays" class="hari-pilihan">
+          <label><input type="checkbox" name="reminderDay" value="1" checked><span>Sen</span></label>
+          <label><input type="checkbox" name="reminderDay" value="2" checked><span>Sel</span></label>
+          <label><input type="checkbox" name="reminderDay" value="3" checked><span>Rab</span></label>
+          <label><input type="checkbox" name="reminderDay" value="4" checked><span>Kam</span></label>
+          <label><input type="checkbox" name="reminderDay" value="5" checked><span>Jum</span></label>
+          <label><input type="checkbox" name="reminderDay" value="6"><span>Sab</span></label>
+          <label><input type="checkbox" name="reminderDay" value="0"><span>Min</span></label>
+        </div><div class="bantuan">Pilih satu atau beberapa hari.</div><div id="scheduleWarning" class="bantuan" hidden>Jadwal lama memakai format kustom. Pilih hari atau jam untuk menggantinya.</div></div>
+        <div class="kolom-field"><label>Jam pengingat</label><div id="reminderTimes" class="times-list"></div><button id="addReminderTime" type="button">＋ Tambah jam</button><div class="bantuan">Bisa menambahkan beberapa jam (maksimal 10).</div></div>
         <div class="kolom-field lebar"><label for="isiPengingat">Isi pesan</label><textarea id="isiPengingat" maxlength="10000" required placeholder="Tulis isi pengingat. Gunakan @all atau @semua untuk menyebut seluruh anggota."></textarea><div class="bantuan">Isi pengingat lama sudah dipindahkan ke pengingat bawaan. Maksimal 10.000 karakter.</div></div>
         <div class="kolom-field lebar"><label class="options"><input id="pengingatAktif" type="checkbox" checked><span>Pengingat ini aktif</span></label></div>
       </div>
@@ -58,8 +70,11 @@
   const reminderForm = document.querySelector('#formPengingat');
   const noticeElement = document.querySelector('#pesanStatus');
   const connectionQrElement = document.querySelector('#connectionQr');
+  const reminderDayInputs = [...document.querySelectorAll('input[name="reminderDay"]')];
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   let reminders = [];
   let editingReminderId = null;
+  let hasUnconvertedCustomSchedule = false;
   let noticeTimer;
 
   function showNotice(message, hasError = false) {
@@ -84,6 +99,86 @@
     return element;
   }
 
+  // Baca satu ekspresi cron untuk mengambil pilihan hari dan satu jamnya.
+  function parseCronExpression(cronExpression) {
+    const parts = String(cronExpression || '').trim().split(/\s+/);
+    if (parts.length !== 5 || !/^\d+$/.test(parts[0]) || !/^\d+$/.test(parts[1])
+      || parts[2] !== '*' || parts[3] !== '*') return null;
+    const minute = Number(parts[0]);
+    const hour = Number(parts[1]);
+    if (minute > 59 || hour > 23) return null;
+    const selectedDays = new Set();
+    if (parts[4] === '*') {
+      for (let day = 0; day <= 6; day++) selectedDays.add(day);
+    } else {
+      for (const segment of parts[4].split(',')) {
+        const range = segment.match(/^(\d+)(?:-(\d+))?$/);
+        if (!range) return null;
+        const first = Number(range[1]);
+        const last = Number(range[2] ?? range[1]);
+        if (first > 7 || last > 7 || first > last) return null;
+        for (let day = first; day <= last; day++) selectedDays.add(day === 7 ? 0 : day);
+      }
+    }
+    return { days: [...selectedDays].sort((first, second) => first - second), time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}` };
+  }
+
+  // Semua jam harus memakai hari yang sama supaya bisa diedit dari form ini.
+  function parseSchedule(cronExpressions) {
+    const schedules = (Array.isArray(cronExpressions) ? cronExpressions : [cronExpressions])
+      .map(parseCronExpression);
+    if (!schedules.length || schedules.some(schedule => !schedule)) return null;
+    const days = schedules[0].days;
+    if (schedules.some(schedule => schedule.days.join(',') !== days.join(','))) return null;
+    return { days, times: [...new Set(schedules.map(schedule => schedule.time))].sort() };
+  }
+
+  function refreshTimeRemoveButtons() {
+    const rows = [...document.querySelectorAll('.time-row')];
+    rows.forEach(row => { row.querySelector('button').disabled = rows.length === 1; });
+  }
+
+  // Tambahkan satu input jam dan tombol untuk menghapusnya.
+  function addTimeInput(value = '') {
+    const row = document.createElement('div'); row.className = 'time-row';
+    const input = document.createElement('input'); input.type = 'time'; input.required = true; input.value = value;
+    input.setAttribute('aria-label', 'Jam pengingat');
+    input.addEventListener('change', () => {
+      hasUnconvertedCustomSchedule = false;
+      document.querySelector('#scheduleWarning').hidden = true;
+    });
+    const removeButton = addText(row, 'button', '×');
+    removeButton.type = 'button'; removeButton.setAttribute('aria-label', 'Hapus jam ini');
+    removeButton.addEventListener('click', () => { row.remove(); refreshTimeRemoveButtons(); });
+    row.prepend(input);
+    document.querySelector('#reminderTimes').append(row);
+    refreshTimeRemoveButtons();
+  }
+
+  // Ubah pilihan hari dan seluruh jam menjadi cron terpisah untuk scheduler.
+  function buildCronExpressions() {
+    const selectedDays = reminderDayInputs.filter(input => input.checked).map(input => Number(input.value));
+    if (!selectedDays.length) throw new Error('Pilih minimal satu hari pengingat.');
+    const times = [...document.querySelectorAll('.time-row input')].map(input => input.value).filter(Boolean);
+    if (!times.length) throw new Error('Tambahkan minimal satu jam pengingat.');
+    if (times.length > 10) throw new Error('Maksimal 10 jam untuk satu reminder.');
+    if (new Set(times).size !== times.length) throw new Error('Jam pengingat tidak boleh duplikat.');
+    return times.sort().map(time => {
+      const [hour, minute] = time.split(':').map(Number);
+      return `${minute} ${hour} * * ${selectedDays.join(',')}`;
+    });
+  }
+
+  function formatSchedule(cronExpressions) {
+    const schedule = parseSchedule(cronExpressions);
+    if (!schedule) return 'Jadwal kustom';
+    const days = schedule.days;
+    const dayLabel = days.length === 7 ? 'Setiap hari'
+      : days.length === 5 && days.join(',') === '1,2,3,4,5' ? 'Senin–Jumat'
+        : days.map(day => dayNames[day]).join(', ');
+    return `${dayLabel} · ${schedule.times.join(', ')}`;
+  }
+
   function renderReminders() {
     remindersListElement.replaceChildren();
     if (!reminders.length) {
@@ -97,15 +192,25 @@
       addText(cardHead, 'span', reminder.enabled ? 'Aktif' : 'Nonaktif', `lencana${reminder.enabled ? '' : ' nonaktif'}`);
       card.append(cardHead);
       const metadata = document.createElement('div'); metadata.className = 'metadata';
-      addText(metadata, 'span', `Cron: ${reminder.cron}`);
-      addText(metadata, 'span', `Zona waktu: ${document.querySelector('#zonaWaktu').textContent}`);
+      addText(metadata, 'span', `Jadwal: ${formatSchedule(reminder.cronExpressions || reminder.cron)}`);
+      addText(metadata, 'span', document.querySelector('#zonaWaktu').textContent);
       if (reminder.lastSentAt) addText(metadata, 'span', `Terakhir dikirim: ${new Date(reminder.lastSentAt).toLocaleString('id-ID')}`);
       card.append(metadata);
       addText(card, 'div', reminder.text, 'pratinjau');
       const actionButtons = document.createElement('div'); actionButtons.className = 'daftar-tombol';
       const editButton = addText(actionButtons, 'button', 'Edit'); editButton.type = 'button'; editButton.addEventListener('click', () => openForm(reminder));
-      const statusButton = addText(actionButtons, 'button', reminder.enabled ? 'Nonaktifkan' : 'Aktifkan'); statusButton.type = 'button';
-      statusButton.addEventListener('click', () => saveReminder({ ...reminder, enabled: !reminder.enabled }));
+      const statusToggle = document.createElement('label'); statusToggle.className = 'switch';
+      const statusInput = document.createElement('input'); statusInput.type = 'checkbox'; statusInput.checked = reminder.enabled;
+      statusInput.setAttribute('aria-label', `${reminder.enabled ? 'Nonaktifkan' : 'Aktifkan'} ${reminder.name}`);
+      const statusTrack = document.createElement('span'); statusTrack.className = 'switch-track';
+      const statusLabel = addText(statusToggle, 'span', reminder.enabled ? 'Aktif' : 'Nonaktif', 'switch-label');
+      statusToggle.prepend(statusInput);
+      statusToggle.insertBefore(statusTrack, statusLabel);
+      statusInput.addEventListener('change', () => {
+        statusLabel.textContent = statusInput.checked ? 'Aktif' : 'Nonaktif';
+        void saveReminder({ ...reminder, enabled: statusInput.checked });
+      });
+      actionButtons.append(statusToggle);
       addText(actionButtons, 'span', '', 'pengisi');
       const deleteButton = addText(actionButtons, 'button', 'Hapus', 'hapus'); deleteButton.type = 'button';
       deleteButton.addEventListener('click', () => deleteReminder(reminder));
@@ -150,7 +255,14 @@
     editingReminderId = reminder?.id || null;
     document.querySelector('#judulForm').textContent = reminder ? 'Edit pengingat' : 'Tambah pengingat';
     document.querySelector('#namaPengingat').value = reminder?.name || '';
-    document.querySelector('#jadwalCron').value = reminder?.cron || '30 14 * * 1-5';
+    const parsedSchedule = parseSchedule(reminder?.cronExpressions || reminder?.cron || '30 14 * * 1-5');
+    hasUnconvertedCustomSchedule = Boolean(reminder && !parsedSchedule);
+    document.querySelector('#scheduleWarning').hidden = !hasUnconvertedCustomSchedule;
+    const schedule = parsedSchedule || { days: [1, 2, 3, 4, 5], times: ['14:30'] };
+    reminderDayInputs.forEach(input => { input.checked = schedule.days.includes(Number(input.value)); });
+    const timesList = document.querySelector('#reminderTimes');
+    timesList.replaceChildren();
+    schedule.times.forEach(time => addTimeInput(time));
     document.querySelector('#isiPengingat').value = reminder?.text || '';
     document.querySelector('#pengingatAktif').checked = reminder?.enabled ?? true;
     formPanel.hidden = false;
@@ -180,16 +292,35 @@
 
   reminderForm.addEventListener('submit', event => {
     event.preventDefault();
-    void saveReminder({
-      name: document.querySelector('#namaPengingat').value,
-      cron: document.querySelector('#jadwalCron').value,
-      text: document.querySelector('#isiPengingat').value,
-      enabled: document.querySelector('#pengingatAktif').checked
-    });
+    if (hasUnconvertedCustomSchedule) {
+      showNotice('Pilih hari atau ubah jam agar jadwal kustom lama diganti dengan pilihan baru.', true);
+      return;
+    }
+    try {
+      void saveReminder({
+        name: document.querySelector('#namaPengingat').value,
+        cronExpressions: buildCronExpressions(),
+        text: document.querySelector('#isiPengingat').value,
+        enabled: document.querySelector('#pengingatAktif').checked
+      });
+    } catch (error) { showNotice(error.message, true); }
   });
   document.querySelector('#tambahPengingat').addEventListener('click', () => openForm());
+  document.querySelector('#addReminderTime').addEventListener('click', () => {
+    const currentTimes = document.querySelectorAll('.time-row').length;
+    if (currentTimes >= 10) return showNotice('Maksimal 10 jam untuk satu reminder.', true);
+    hasUnconvertedCustomSchedule = false;
+    document.querySelector('#scheduleWarning').hidden = true;
+    addTimeInput();
+  });
   document.querySelector('#tutupForm').addEventListener('click', () => { formPanel.hidden = true; });
   document.querySelector('#batalForm').addEventListener('click', () => { formPanel.hidden = true; });
+  reminderDayInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      hasUnconvertedCustomSchedule = false;
+      document.querySelector('#scheduleWarning').hidden = true;
+    });
+  });
   document.querySelector('#statusGlobal').addEventListener('change', async event => {
     try {
       await callApi('/api/reminders/settings', { method: 'PATCH', body: JSON.stringify({ enabled: event.target.checked }) });

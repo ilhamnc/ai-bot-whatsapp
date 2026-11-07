@@ -6,7 +6,7 @@ import {
 
 const cooldowns = new Map();
 const dailyLimits = new Map();
-const lastSuccessfulModel = { chat: null, ringkasan: null };
+const lastSuccessfulModel = { chat: null, ringkasan: null, reminder: null };
 const aiJobs = [];
 let runningJobs = 0;
 let geminiClient;

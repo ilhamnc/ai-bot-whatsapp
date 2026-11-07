@@ -124,7 +124,7 @@ client.on("message", async msg => {
     if (lower === "!schedule") {
       const reminders = getReminders();
       const schedule = reminders.length
-        ? reminders.map(reminder => `- ${reminder.enabled ? '✅' : '⏸️'} *${reminder.name}*: \`${reminder.cron}\``).join('\n')
+        ? reminders.map(reminder => `- ${reminder.enabled ? '✅' : '⏸️'} *${reminder.name}*: \`${(reminder.cronExpressions || [reminder.cron]).join(' | ')}\``).join('\n')
         : 'Belum ada reminder yang dibuat.';
       return msg.reply(`⏰ *Jadwal reminder* (${TZ})\nStatus global: *${state.enabled ? "Aktif" : "Nonaktif"}*\n\n${schedule}`);
     }
