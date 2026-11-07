@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { TARGET_GROUP, authDir, stateDir } from '../config.js';
+import { readSecureJson, writeSecureJson } from '../services/encryptionService.js';
 
 const settingsFile = path.join(stateDir, 'bot-settings.json');
 const legacyAccountId = 'asisten-grup-ai';
@@ -25,26 +26,20 @@ function initialSettings() {
 
 function loadSettings() {
   const fallback = initialSettings();
-  try {
-    const saved = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
-    if (!Array.isArray(saved.accounts) || !saved.accounts.length) return fallback;
-    const accounts = saved.accounts.filter(account => account && accountIdPattern.test(String(account.id)));
-    if (!accounts.length) return fallback;
-    const activeAccountId = accounts.some(account => account.id === saved.activeAccountId)
-      ? saved.activeAccountId : accounts[0].id;
-    return { activeAccountId, accounts, groupsByAccount: saved.groupsByAccount || {} };
-  } catch {
-    return fallback;
-  }
+  const saved = readSecureJson(settingsFile, null);
+  if (!saved || !Array.isArray(saved.accounts) || !saved.accounts.length) return fallback;
+  const accounts = saved.accounts.filter(account => account && accountIdPattern.test(String(account.id)));
+  if (!accounts.length) return fallback;
+  const activeAccountId = accounts.some(account => account.id === saved.activeAccountId)
+    ? saved.activeAccountId : accounts[0].id;
+  return { activeAccountId, accounts, groupsByAccount: saved.groupsByAccount || {} };
 }
 
 const settings = loadSettings();
 
 function saveSettings() {
   fs.mkdirSync(stateDir, { recursive: true });
-  const temporaryFile = `${settingsFile}.tmp`;
-  fs.writeFileSync(temporaryFile, JSON.stringify(settings, null, 2), 'utf8');
-  fs.renameSync(temporaryFile, settingsFile);
+  writeSecureJson(settingsFile, settings);
 }
 
 function groupSettingsFor(accountId = settings.activeAccountId) {

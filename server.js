@@ -13,7 +13,7 @@ if (!cron.validate(REMINDER_CRON)) throw new Error('Ekspresi cron tidak valid.')
 validateConfig();
 
 const connectionManager = createWhatsAppConnectionManager(() => {
-  console.log(`Pengingat terjadwal: ${getReminders().filter(reminder => reminder.enabled).length}. Grup: ${getTargetGroup() || 'BELUM DIPILIH'}`);
+  console.log(`Pengingat terjadwal: ${getReminders().filter(reminder => reminder.enabled).length}. Grup: ${getTargetGroup() ? 'sudah dipilih' : 'belum dipilih'}.`);
   console.log(`Provider AI: ${AI_PROVIDER_NAME} (${AI_PROVIDER})`);
   console.log('Urutan model: ' + AI_MODELS.join(' -> '));
   if (!getTargetGroup()) console.log('Kirim !idgrup di grup WhatsApp untuk memilih grup target.');
@@ -29,17 +29,21 @@ const dashboardPort = Number(process.env.PORT || process.env.DASHBOARD_PORT || 3
 const dashboardHost = process.env.DASHBOARD_HOST?.trim() || '127.0.0.1';
 const dashboardUser = process.env.DASHBOARD_USER?.trim() || '';
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || '';
+const isLocalDashboard = ['127.0.0.1', '::1', 'localhost'].includes(dashboardHost);
 if ((dashboardUser && !dashboardPassword) || (!dashboardUser && dashboardPassword)) {
   throw new Error('DASHBOARD_USER dan DASHBOARD_PASSWORD harus diisi bersama.');
 }
-if (!['127.0.0.1', '::1', 'localhost'].includes(dashboardHost) && !dashboardUser) {
+if (!isLocalDashboard && !dashboardUser) {
   throw new Error('Dashboard yang menerima koneksi luar wajib memakai DASHBOARD_USER dan DASHBOARD_PASSWORD.');
+}
+if (!isLocalDashboard && dashboardPassword.length < 16) {
+  throw new Error('DASHBOARD_PASSWORD untuk akses dari luar harus memiliki minimal 16 karakter.');
 }
 const dashboardServer = createDashboardServer(
   syncSchedules,
   () => connectionManager.getInfo(),
   connectionManager,
-  { user: dashboardUser, password: dashboardPassword }
+  { user: dashboardUser, password: dashboardPassword, requireHttps: !isLocalDashboard }
 );
 dashboardServer.listen(dashboardPort, dashboardHost, () => {
   console.log(`Dashboard reminder: http://${dashboardHost}:${dashboardPort}`);

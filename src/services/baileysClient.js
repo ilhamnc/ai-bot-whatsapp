@@ -1,12 +1,100 @@
 // Menyesuaikan event dan objek Baileys dengan antarmuka yang dipakai bot.
 // Baileys memakai WebSocket sehingga tidak perlu menjalankan Chrome.
 import { EventEmitter } from 'node:events';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import makeWASocket, { DisconnectReason, jidNormalizedUser, useMultiFileAuthState } from '@whiskeysockets/baileys';
+import makeWASocket, {
+  BufferJSON, DisconnectReason, initAuthCreds, jidNormalizedUser, proto
+} from '@whiskeysockets/baileys';
 import pino from 'pino';
+import { decryptText, encryptText, isEncrypted } from './encryptionService.js';
 
 // Log detail handshake Baileys berisi metadata teknis yang tidak perlu dicetak rutin.
 const whatsappLogger = pino({ level: 'warn' });
+const fileQueues = new Map();
+
+function withFileLock(file, action) {
+  const previous = fileQueues.get(file) || Promise.resolve();
+  const current = previous.catch(() => {}).then(action);
+  fileQueues.set(file, current);
+  return current.finally(() => {
+    if (fileQueues.get(file) === current) fileQueues.delete(file);
+  });
+}
+
+function safeAuthFilename(name) {
+  return String(name || '').replace(/[\\/]/g, '__').replace(/:/g, '-');
+}
+
+async function writeAuthData(folder, name, value) {
+  const file = path.join(folder, safeAuthFilename(name));
+  const temporary = `${file}.tmp`;
+  const serialized = JSON.stringify(value, BufferJSON.replacer);
+  await fs.writeFile(temporary, encryptText(serialized), { encoding: 'utf8', mode: 0o600 });
+  await fs.rename(temporary, file);
+  try { await fs.chmod(file, 0o600); } catch { /* Mode POSIX tidak tersedia di Windows. */ }
+}
+
+async function readAuthData(folder, name) {
+  const file = path.join(folder, safeAuthFilename(name));
+  return withFileLock(file, async () => {
+    let raw;
+    try { raw = await fs.readFile(file, 'utf8'); }
+    catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+    if (isEncrypted(raw)) return JSON.parse(decryptText(raw), BufferJSON.reviver);
+    const value = JSON.parse(raw, BufferJSON.reviver);
+    await writeAuthData(folder, name, value);
+    return value;
+  });
+}
+
+export async function migrateEncryptedAuthState(folder) {
+  await fs.mkdir(folder, { recursive: true, mode: 0o700 });
+  for (const name of await fs.readdir(folder)) {
+    if (name.endsWith('.tmp')) {
+      await fs.rm(path.join(folder, name), { force: true });
+    } else if (name.endsWith('.json')) {
+      await readAuthData(folder, name);
+    }
+  }
+}
+
+async function useEncryptedAuthState(folder) {
+  await migrateEncryptedAuthState(folder);
+  const creds = await readAuthData(folder, 'creds.json') || initAuthCreds();
+  return {
+    state: {
+      creds,
+      keys: {
+        get: async (type, ids) => {
+          const values = {};
+          await Promise.all(ids.map(async id => {
+            let value = await readAuthData(folder, `${type}-${id}.json`);
+            if (type === 'app-state-sync-key' && value) value = proto.Message.AppStateSyncKeyData.fromObject(value);
+            values[id] = value;
+          }));
+          return values;
+        },
+        set: async data => {
+          const tasks = [];
+          for (const type of Object.keys(data)) {
+            for (const id of Object.keys(data[type])) {
+              const filename = `${type}-${id}.json`;
+              const value = data[type][id];
+              const file = path.join(folder, safeAuthFilename(filename));
+              tasks.push(withFileLock(file, async () => {
+                if (value) await writeAuthData(folder, filename, value);
+                else await fs.rm(file, { force: true });
+              }));
+            }
+          }
+          await Promise.all(tasks);
+        }
+      }
+    },
+    saveCreds: () => withFileLock(path.join(folder, 'creds.json'), () => writeAuthData(folder, 'creds.json', creds))
+  };
+}
 
 function unwrapMessage(message) {
   let content = message || {};
@@ -42,7 +130,7 @@ export class BaileysClient extends EventEmitter {
   }
 
   async initialize() {
-    const { state, saveCreds } = await useMultiFileAuthState(this.sessionPath);
+    const { state, saveCreds } = await useEncryptedAuthState(this.sessionPath);
     if (this.destroyed) return;
     this.authState = state;
     this.saveCreds = saveCreds;

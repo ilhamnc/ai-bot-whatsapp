@@ -5,24 +5,23 @@ import cron from 'node-cron';
 import { REMINDER_CRON, stateDir, stateFile, remindersFile, messageFile } from '../config.js';
 import { getTargetGroup } from './botSettingsModel.js';
 import { generateWithFallback, runAiJob } from '../services/aiService.js';
+import { readSecureJson, readSecureText, writeSecureJson } from '../services/encryptionService.js';
 
 const MAX_NAME = 80;
 const MAX_TEXT = 10000;
 const MAX_DAILY_TIMES = 10;
+// Enkripsi file reminder lama meski reminders.json sudah tersedia.
+const legacyReminderText = readSecureText(messageFile, '').trim();
 
 function loadState() {
-  try {
-    return { enabled: true, lastDateSent: null, prayerReminder: null, ...JSON.parse(fs.readFileSync(stateFile, 'utf8')) };
-  } catch {
-    return { enabled: true, lastDateSent: null, prayerReminder: null };
-  }
+  return { enabled: true, lastDateSent: null, prayerReminder: null, ...readSecureJson(stateFile, {}) };
 }
 
 export const state = loadState();
 
 export function saveState() {
   fs.mkdirSync(stateDir, { recursive: true });
-  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf8');
+  writeSecureJson(stateFile, state);
 }
 
 const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -99,15 +98,14 @@ export function markPrayerReminderSent(key) {
 
 // Jika belum ada data baru, isi berkas lama dipakai sebagai reminder pertama.
 function initialReminder() {
-  let text = '';
-  try { text = fs.readFileSync(messageFile, 'utf8').trim(); } catch { /* Berkas lama boleh belum tersedia. */ }
+  const text = legacyReminderText;
   return [{ id: 'default-reminder', name: 'Pengingat bawaan', cron: REMINDER_CRON, cronExpressions: [REMINDER_CRON], text: text, enabled: true, lastSentAt: null }];
 }
 
 function loadReminders() {
-  try {
-    const savedData = JSON.parse(fs.readFileSync(remindersFile, 'utf8'));
-    return Array.isArray(savedData) ? savedData.map(reminder => {
+  const savedData = readSecureJson(remindersFile, null);
+  if (Array.isArray(savedData)) {
+    return savedData.map(reminder => {
       // Baca cron tunggal dari data lama dan migrasikan ke daftar jadwal.
       const savedSchedules = Array.isArray(reminder.cronExpressions)
         ? reminder.cronExpressions.map(expression => String(expression)).filter(Boolean)
@@ -124,19 +122,18 @@ function loadReminders() {
         enabled: reminder.enabled !== false,
         lastSentAt: reminder.lastSentAt || null
       };
-    }) : initialReminder();
-  } catch {
-    return initialReminder();
+    });
   }
+  const reminders = initialReminder();
+  writeSecureJson(remindersFile, reminders);
+  return reminders;
 }
 
 let reminders = loadReminders();
 
 function persistReminders() {
   fs.mkdirSync(stateDir, { recursive: true });
-  const temporaryFile = `${remindersFile}.tmp`;
-  fs.writeFileSync(temporaryFile, JSON.stringify(reminders, null, 2), 'utf8');
-  fs.renameSync(temporaryFile, remindersFile);
+  writeSecureJson(remindersFile, reminders);
 }
 
 function validateReminder(input) {

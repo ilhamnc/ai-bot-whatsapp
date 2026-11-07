@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validateEncryptionKey } from './services/encryptionService.js';
 
 export const APP_DIR = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const TZ = 'Asia/Jakarta';
@@ -33,6 +34,7 @@ export const aiMemoryFile = path.join(stateDir, 'ai-memory.json');
 export const botMentionIdsFile = path.join(stateDir, 'bot-mention-ids.json');
 
 export function validateConfig() {
+  validateEncryptionKey();
   if (!['gemini', 'openai'].includes(AI_PROVIDER)) {
     throw new Error('AI_PROVIDER harus bernilai "gemini" atau "openai".');
   }
@@ -41,5 +43,11 @@ export function validateConfig() {
   }
   if (TARGET_GROUP && !TARGET_GROUP.endsWith('@g.us')) {
     throw new Error('WA_GROUP_ID harus berakhiran @g.us');
+  }
+  let aiUrl;
+  try { aiUrl = new URL(AI_BASE_URL); }
+  catch { throw new Error('AI_BASE_URL harus berupa URL yang valid.'); }
+  if (aiUrl.protocol !== 'https:' && !['localhost', '127.0.0.1', '::1', '[::1]'].includes(aiUrl.hostname)) {
+    throw new Error('AI_BASE_URL untuk host eksternal wajib memakai HTTPS agar kunci API tidak terkirim tanpa enkripsi.');
   }
 }

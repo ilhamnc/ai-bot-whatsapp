@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { stateDir, aiMemoryFile } from '../config.js';
 import { generateWithFallback } from '../services/aiService.js';
+import { readSecureJson, writeSecureJson } from '../services/encryptionService.js';
 
 // Nama properti turns, pending, summary, dan updatedAt dipertahankan agar data lama tetap terbaca.
 const MAX_MEMORY_PAIRS = 20;
@@ -18,19 +19,13 @@ const summariesInProgress = new Set();
 const summaryFailures = new Map();
 
 function loadAiMemory() {
-  try {
-    const raw = JSON.parse(fs.readFileSync(aiMemoryFile, 'utf8'));
-    return new Map(Object.entries(raw));
-  } catch {
-    return new Map();
-  }
+  const raw = readSecureJson(aiMemoryFile, {});
+  return new Map(Object.entries(raw));
 }
 
 function saveAiMemory() {
   fs.mkdirSync(stateDir, { recursive: true });
-  const temporaryFile = `${aiMemoryFile}.tmp`;
-  fs.writeFileSync(temporaryFile, JSON.stringify(Object.fromEntries(aiMemory), null, 2), 'utf8');
-  fs.renameSync(temporaryFile, aiMemoryFile);
+  writeSecureJson(aiMemoryFile, Object.fromEntries(aiMemory));
 }
 
 function countTurnCharacters(turns) {

@@ -81,7 +81,7 @@ export function createWhatsAppConnectionManager(onReady) {
       const phone = nextClient.info?.wid?.user || '';
       rememberConnectedAccount(accountId, phone);
       clearExpiredMemories();
-      console.log(`AiBot WhatsApp terhubung: ${phone || accountId}.`);
+      console.log('AiBot WhatsApp terhubung.');
       onReady?.();
     });
     nextClient.on('disconnected', reason => {

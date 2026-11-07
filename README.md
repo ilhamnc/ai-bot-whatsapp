@@ -6,7 +6,6 @@ Bot untuk satu grup WhatsApp. Bot menjawab pertanyaan melalui Gemini atau API ya
 
 ```text
 server.js                       # Entry point, koneksi WhatsApp, dan jadwal cron
-bot.js                          # Alias kompatibilitas untuk server.js
 src/
   config.js                     # Environment, validasi, dan lokasi penyimpanan
   routes/
@@ -17,6 +16,7 @@ src/
     dashboardController.js      # API pengelolaan reminder
   services/
     aiService.js                # Provider AI, fallback model, antrean, dan kuota
+    encryptionService.js        # Enkripsi AES-256-GCM untuk data sensitif lokal
     reminderScheduler.js        # Cron job dinamis untuk setiap reminder
     whatsappConnectionService.js # Pemilihan dan penautan sesi WhatsApp
     baileysClient.js          # Adapter pesan, QR, dan koneksi Baileys
@@ -42,14 +42,13 @@ Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan 
 
 1. Pasang Node.js 22.13 atau lebih baru.
 2. Jalankan `npm ci` di folder proyek.
-3. Salin `.env.example` menjadi `.env` dan atur `AI_PROVIDER`, `AI_API_KEY`, serta `AI_MODEL`.
+3. Salin `.env.example` menjadi `.env`, buat `DATA_ENCRYPTION_KEY` dengan perintah di komentar `.env.example`, lalu atur `AI_PROVIDER`, `AI_API_KEY`, dan `AI_MODEL`.
 4. Jalankan `npm start`, buka dashboard, lalu masuk ke **Pengaturan → Set WA Bot** untuk memindai QR melalui WhatsApp > Perangkat tertaut > Tautkan perangkat.
 5. Di grup tujuan, kirim `!idgrup`. Grup itu langsung menjadi target jika pilihan belum dikunci. Riwayat, pilihan grup, dan kuncinya tersedia di **Pengaturan → ID Grup Bot**.
 6. Kirim `!myid`. Masukkan ID dari terminal ke `BOT_ADMIN_IDS`, lalu mulai ulang bot.
 
 Saat mengembangkan kode, jalankan `npm run dev`. Nodemon akan memulai ulang bot ketika file program atau `.env` disimpan. Pengaturan pemantauan berada di `package.json` dan mengabaikan data sesi serta `.state` agar perubahan data runtime tidak memicu restart.
 
-AiBot menyimpan pesan teks dan caption di grup target ke `.state/chat-history.sqlite`, termasuk pesan anggota dan balasan bot. File media aslinya tidak disimpan. Arsip mulai terisi setelah bot berjalan dengan grup target terpilih; pesan lama sebelum itu tidak otomatis diimpor. Pertanyaan yang merujuk obrolan grup memakai beberapa pesan terbaru dan pesan lama yang cocok dengan kata kunci, dengan konteks arsip tambahan dibatasi sekitar 5.000 karakter. Penyimpanan tidak memanggil AI; konteks arsip hanya menambah token ketika dipakai dalam pertanyaan. Perintah admin `!hapusriwayat` menghapus arsip untuk grup aktif.
 AiBot menyimpan pesan teks dan caption di grup target ke `.state/chat-history.sqlite`, termasuk pesan anggota dan balasan bot. File media aslinya tidak disimpan. Arsip mulai terisi setelah bot berjalan dengan grup target terpilih; pesan lama sebelum itu tidak otomatis diimpor. Pertanyaan yang merujuk obrolan grup memakai beberapa pesan terbaru dan pesan lama yang cocok dengan kata kunci, dengan konteks arsip tambahan dibatasi sekitar 5.000 karakter. Penyimpanan tidak memanggil AI; konteks arsip hanya menambah token ketika dipakai dalam pertanyaan. Perintah admin `!hapusriwayat` menghapus arsip untuk grup aktif; `!resetai` hanya membersihkan memori percakapan AI.
 
 Menu **Set WA Bot** menampilkan riwayat nomor. Tombol × pada satu akun menghapus profil dan sesi lokalnya; untuk akun aktif bot juga mencoba keluar dari WhatsApp. Jika akun lama yang tidak aktif masih tercantum pada **Perangkat tertaut** di ponsel, lepaskan dari aplikasi WhatsApp. Menu **ID Grup Bot** menampilkan nama grup bila WhatsApp menyediakannya, serta menerima ID manual berbentuk `120363...@g.us`. ID tersebut berasal dari WhatsApp dan dapat dilihat lewat balasan `!idgrup`; bot harus menjadi anggota grup agar dapat mengirim pesan.
@@ -95,16 +94,18 @@ Tuliskan `@all` atau `@semua` pada isi reminder untuk menyebut semua anggota. Pe
 
 ## Data dan deployment
 
-`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; arsip chat disimpan di `.state/chat-history.sqlite`; sesi akun yang tertaut disimpan di `.wa_auth`. Simpan direktori state dan auth pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama.
+`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Isi pesan arsip, memori AI, pengaturan JSON, dan file sesi Baileys dienkripsi dengan AES-256-GCM. Siapkan `DATA_ENCRYPTION_KEY` berupa 32 byte Base64 pada `.env`; gunakan nilai yang sama sebagai secret pada hosting dan simpan salinan cadangan di tempat aman. Kehilangan atau mengganti kunci membuat data lama tidak dapat dibaca. ID grup dan metadata waktu/jenis pesan di SQLite tetap terlihat agar pencarian dan pengurutan bekerja. Istilah pencarian disimpan sebagai HMAC, bukan kata aslinya.
 
-Bot memakai Baileys melalui WebSocket, tanpa Chrome. Jika sebelumnya memakai `whatsapp-web.js`, pindai ulang QR melalui menu **Set WA Bot**: format sesi lama tidak dapat dibaca Baileys. Folder `.wwebjs_auth` lama sengaja tidak dihapus agar masih bisa digunakan bila perlu kembali ke versi sebelumnya.
+Riwayat akun dan pilihan grup berada di `.state/bot-settings.json`; arsip chat di `.state/chat-history.sqlite`; sesi akun di `.wa_auth`. Data lama plaintext dimigrasikan otomatis saat bot mulai. Gunakan volume persisten untuk kedua direktori di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama.
+
+Bot memakai Baileys melalui WebSocket, tanpa Chrome. Jika sebelumnya memakai `whatsapp-web.js`, pindai ulang QR melalui menu **Set WA Bot**: format sesi lama tidak dapat dibaca Baileys.
 
 ### Railway
 
 1. Buat service dari repository GitHub ini dan pilih Dockerfile sebagai builder.
-2. Pasang volume persisten di `/data`, lalu isi `AI_API_KEY`, `DASHBOARD_USER`, dan `DASHBOARD_PASSWORD` pada Variables. Isi variabel AI lain sesuai provider yang dipakai. Jangan unggah `.env`.
+2. Pasang volume persisten di `/data`, lalu isi `AI_API_KEY`, `DATA_ENCRYPTION_KEY`, `DASHBOARD_USER`, dan `DASHBOARD_PASSWORD` pada Variables. Salin `DATA_ENCRYPTION_KEY` yang sama dari `.env` lokal dengan aman. Isi variabel AI lain sesuai provider yang dipakai. Jangan unggah `.env`.
 3. Buat domain publik untuk service, buka dashboard dengan login tadi, kemudian pindai QR di **Pengaturan → Set WA Bot**. Pilih grup dengan `!idgrup`.
 4. Pastikan volume menyimpan `/data/state` dan `/data/auth` agar login WhatsApp, pengaturan, dan arsip SQLite tetap ada setelah deploy ulang.
 
-Railway Free memiliki batas RAM, volume, dan kredit bulanan. Berjalan tanpa Chrome mengurangi pemakaian RAM, tetapi bot yang aktif terus menerus tetap dapat menghabiskan kredit gratis. Pantau metrik dan penggunaan kredit Railway; reminder hanya terkirim saat service berjalan. Arsip chat lengkap akan terus menambah isi volume.
+Arsip chat tidak memiliki masa kedaluwarsa otomatis dan terus bertambah sampai dihapus dengan `!hapusriwayat`. Ini berbeda dari memori percakapan AI di `ai-memory.json`, yang menghapus konteks tidak aktif setelah 30 hari. Railway Free memiliki batas volume 0,5 GB; pantau pemakaian volumenya. Riwayat lengkap hanya merekam pesan baru di grup target saat bot berjalan.
 

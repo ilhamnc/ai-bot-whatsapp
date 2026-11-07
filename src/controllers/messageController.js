@@ -5,6 +5,7 @@ import {
 } from "../config.js";
 import { getTargetGroup, registerGroupFromCommand } from '../models/botSettingsModel.js';
 import { archiveWhatsAppMessage, clearGroupChatHistory, getChatHistoryStats, getRelevantGroupHistory } from '../models/chatHistoryModel.js';
+import { readSecureJson, writeSecureJson } from '../services/encryptionService.js';
 import { state, saveState, reminderText, getReminders, getPrayerReminderSettings, sendReminderWithAllTag, createReminderVariant } from "../models/reminderModel.js";
 import {
   runAiJob, DAILY_LIMIT_MESSAGE, isDailyLimitReached, describeAiError,
@@ -43,16 +44,17 @@ function normalizeMentionId(id) {
   if (typeof id === 'string') return id.toLowerCase();
   return String(id?._serialized || id?.id?._serialized || id?.id || '').toLowerCase();
 }
+let botMentionIds = readSecureJson(botMentionIdsFile, []);
+if (!Array.isArray(botMentionIds)) botMentionIds = [];
+
 function registeredMentionIds() {
-  try {
-    const data = JSON.parse(fs.readFileSync(botMentionIdsFile, 'utf8'));
-    return Array.isArray(data) ? data.filter(x => typeof x === 'string') : [];
-  } catch { return []; }
+  return botMentionIds.filter(id => typeof id === 'string');
 }
 function saveBotMentionId(id) {
   const ids = [...new Set([...registeredMentionIds(), id])];
   fs.mkdirSync(stateDir, { recursive: true });
-  fs.writeFileSync(botMentionIdsFile, JSON.stringify(ids, null, 2), 'utf8');
+  writeSecureJson(botMentionIdsFile, ids);
+  botMentionIds = ids;
 }
 
 function isCalledWithMention(msg, text, client) {
@@ -244,7 +246,7 @@ client.on("message", async msg => {
         await sendReminderWithAllTag(client, getTargetGroup(), '🧪 *UJI KIRIM OTOMATIS*\n\n' + testReminderText);
         console.log('Perintah pengiriman langsung ke grup sudah dijalankan.');
       } catch (error) {
-        console.error('Uji kirim otomatis gagal:', error.stack || error);
+        console.error('Uji kirim otomatis gagal. Jenis error:', error?.name || 'Error');
         return msg.reply('⚠️ Pengiriman langsung gagal. Lihat error di CMD.');
       }
       return;
@@ -320,7 +322,7 @@ client.on("message", async msg => {
           return;
         } catch (error) {
           const errorInfo = describeAiError(error);
-          console.error('Permintaan AI gagal:', error.stack || error);
+          console.error('Permintaan AI gagal. Kode:', errorInfo.code || 'tidak diketahui', '| jenis:', error?.name || 'Error');
           if (error?.allModelsDaily || AI_MODELS.every(isDailyLimitReached)) {
             return msg.reply(DAILY_LIMIT_MESSAGE);
           }
@@ -338,7 +340,7 @@ client.on("message", async msg => {
       });
     }
   } catch (error) {
-    console.error("Kesalahan saat membaca perintah:", error.stack || error);
+    console.error('Kesalahan saat membaca perintah. Jenis error:', error?.name || 'Error');
   }
 });
 }

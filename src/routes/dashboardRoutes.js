@@ -20,8 +20,46 @@ function isAuthorized(request, credentials) {
     && matchesCredential(decoded.slice(separator + 1), credentials.password);
 }
 
+function isSameOriginMutation(request) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return true;
+  if (request.headers['sec-fetch-site'] === 'cross-site') return false;
+  const origin = request.headers.origin;
+  if (!origin) return true; // CLI dan aplikasi lokal dapat mengirim permintaan tanpa Origin.
+  try {
+    const parsedOrigin = new URL(origin);
+    const forwardedHost = String(request.headers['x-forwarded-host'] || request.headers.host || '').split(',')[0].trim();
+    const forwardedProto = String(request.headers['x-forwarded-proto'] || (request.socket.encrypted ? 'https' : 'http'))
+      .split(',')[0].trim().toLowerCase();
+    return parsedOrigin.host.toLowerCase() === forwardedHost.toLowerCase()
+      && parsedOrigin.protocol === `${forwardedProto}:`;
+  } catch {
+    return false;
+  }
+}
+
+function isSecureRequest(request) {
+  const forwardedProto = String(request.headers['x-forwarded-proto'] || '')
+    .split(',')[0].trim().toLowerCase();
+  return request.socket.encrypted === true || forwardedProto === 'https';
+}
+
+function setDashboardSecurityHeaders(response) {
+  response.setHeader('x-content-type-options', 'nosniff');
+  response.setHeader('x-frame-options', 'DENY');
+  response.setHeader('referrer-policy', 'no-referrer');
+  response.setHeader('content-security-policy', "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
+}
+
 export function createDashboardServer(syncSchedules, getConnectionInfo, connectionManager, credentials = {}) {
   return createServer((request, response) => {
+    setDashboardSecurityHeaders(response);
+    const secureRequest = isSecureRequest(request);
+    if (secureRequest) response.setHeader('strict-transport-security', 'max-age=31536000');
+    if (credentials.requireHttps && !secureRequest) {
+      response.writeHead(426, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+      response.end('Dashboard harus dibuka melalui HTTPS.');
+      return;
+    }
     if (!isAuthorized(request, credentials)) {
       response.writeHead(401, {
         'content-type': 'text/plain; charset=utf-8',
@@ -29,6 +67,17 @@ export function createDashboardServer(syncSchedules, getConnectionInfo, connecti
         'www-authenticate': 'Basic realm="AiBot Dashboard"'
       });
       response.end('Login dashboard diperlukan.');
+      return;
+    }
+    if (!isSameOriginMutation(request)) {
+      response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+      response.end('Permintaan lintas situs ditolak.');
+      return;
+    }
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
+      && !String(request.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
+      response.writeHead(415, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+      response.end('Perubahan dashboard harus memakai JSON.');
       return;
     }
     void handleDashboardRequest(request, response, syncSchedules, getConnectionInfo, connectionManager).catch(error => {

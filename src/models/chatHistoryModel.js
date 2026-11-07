@@ -1,9 +1,10 @@
 // Arsip teks chat grup dan pencarian konteks lama disimpan di SQLite lokal.
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { stateDir } from '../config.js';
+import { createBlindIndex, createPrivateIdentifier, decryptText, encryptText, isEncrypted, tokenizeForSearch } from '../services/encryptionService.js';
 
 fs.mkdirSync(stateDir, { recursive: true });
 const database = new DatabaseSync(path.join(stateDir, 'chat-history.sqlite'));
@@ -23,7 +24,38 @@ database.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_chat_messages_group_time
     ON chat_messages(group_id, sent_at DESC, id DESC);
+  CREATE TABLE IF NOT EXISTS chat_message_terms (
+    message_id TEXT NOT NULL,
+    term_hash TEXT NOT NULL,
+    PRIMARY KEY(message_id, term_hash)
+  );
+  CREATE INDEX IF NOT EXISTS idx_chat_message_terms_hash
+    ON chat_message_terms(term_hash, message_id);
 `);
+
+// Migrasikan arsip lama, lalu rapikan WAL agar halaman plaintext sebelum migrasi tidak tertinggal di sana.
+const migrateChatArchive = database.prepare(`
+  UPDATE chat_messages SET content = ?, sender_name = ? WHERE message_id = ?
+`);
+const addSearchTerm = database.prepare('INSERT OR IGNORE INTO chat_message_terms (message_id, term_hash) VALUES (?, ?)');
+database.exec('BEGIN IMMEDIATE');
+let archiveNeedsCompaction = false;
+try {
+  for (const row of database.prepare('SELECT message_id, content, sender_name FROM chat_messages').all()) {
+    const plainContent = isEncrypted(row.content) ? decryptText(row.content) : row.content;
+    const plainName = isEncrypted(row.sender_name) ? decryptText(row.sender_name) : row.sender_name;
+    if (!isEncrypted(row.content) || !isEncrypted(row.sender_name)) {
+      migrateChatArchive.run(encryptText(plainContent), encryptText(plainName), row.message_id);
+      archiveNeedsCompaction = true;
+    }
+    for (const term of tokenizeForSearch(plainContent)) addSearchTerm.run(row.message_id, createBlindIndex(term));
+  }
+  database.exec('COMMIT');
+} catch (error) {
+  database.exec('ROLLBACK');
+  throw error;
+}
+if (archiveNeedsCompaction) database.exec('PRAGMA wal_checkpoint(TRUNCATE); VACUUM;');
 
 const insertMessage = database.prepare(`
   INSERT OR IGNORE INTO chat_messages
@@ -31,6 +63,20 @@ const insertMessage = database.prepare(`
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const deleteGroupMessages = database.prepare('DELETE FROM chat_messages WHERE group_id = ?');
+const deleteGroupTerms = database.prepare(`
+  DELETE FROM chat_message_terms WHERE message_id IN
+    (SELECT message_id FROM chat_messages WHERE group_id = ?)
+`);
+const searchMessagesByTerms = database.prepare(`
+  SELECT m.message_id, m.sender_key, m.sender_name, m.content, m.from_bot, m.sent_at,
+    COUNT(DISTINCT t.term_hash) AS match_score
+  FROM chat_messages AS m
+  JOIN chat_message_terms AS t ON t.message_id = m.message_id
+  WHERE m.group_id = ? AND m.message_id <> ? AND t.term_hash IN (${Array(8).fill('?').join(',')})
+  GROUP BY m.message_id
+  ORDER BY match_score DESC, m.sent_at DESC, m.id DESC
+  LIMIT 300
+`);
 
 const STOP_WORDS = new Set([
   'yang', 'dan', 'atau', 'dari', 'untuk', 'dengan', 'dalam', 'pada', 'buat', 'kalau',
@@ -45,7 +91,7 @@ function getMessageId(message) {
 }
 
 function getSenderKey(author) {
-  return createHash('sha256').update(String(author || 'unknown')).digest('hex').slice(0, 10);
+  return createPrivateIdentifier(author);
 }
 
 // Simpan pesan teks/caption di grup target; nomor WhatsApp tidak disimpan mentah.
@@ -67,10 +113,12 @@ export function archiveWhatsAppMessage(message, targetGroup) {
   const timestamp = Number(message.timestamp);
   const sentAt = Number.isFinite(timestamp) && timestamp > 0 ? timestamp * 1000 : Date.now();
 
+  const messageId = getMessageId(message);
   insertMessage.run(
-    getMessageId(message), groupId, getSenderKey(senderId), senderName,
-    content, messageType, fromBot ? 1 : 0, sentAt
+    messageId, groupId, getSenderKey(senderId), encryptText(senderName),
+    encryptText(content), messageType, fromBot ? 1 : 0, sentAt
   );
+  for (const term of tokenizeForSearch(content)) addSearchTerm.run(messageId, createBlindIndex(term));
   return true;
 }
 
@@ -78,7 +126,7 @@ function toContextTurn(row) {
   const label = row.from_bot ? 'AiBot' : `[ANGGOTA:${row.sender_key}] ${row.sender_name}`;
   return {
     role: row.from_bot ? 'model' : 'user',
-    text: `${label}: ${String(row.content).slice(0, 1000)}`,
+    text: `${label}: ${decryptText(row.content).slice(0, 1000)}`,
     sentAt: Number(row.sent_at)
   };
 }
@@ -99,23 +147,26 @@ export function getRelevantGroupHistory(groupId, question, excludeMessageId = ''
     WHERE group_id = ? AND message_id <> ?
     ORDER BY sent_at DESC, id DESC LIMIT 12
   `).all(groupId, excludeMessageId || '');
+  const recentMessages = recentRows.map(row => ({
+    ...row,
+    content: decryptText(row.content),
+    sender_name: decryptText(row.sender_name)
+  }));
 
   const keywords = questionKeywords(question);
   let relevantRows = [];
   if (keywords.length) {
-    const clauses = keywords.map(() => 'lower(content) LIKE ?').join(' OR ');
-    const matches = database.prepare(`
-      SELECT message_id, sender_key, sender_name, content, from_bot, sent_at
-      FROM chat_messages
-      WHERE group_id = ? AND message_id <> ? AND (${clauses})
-      ORDER BY sent_at DESC, id DESC LIMIT 300
-    `).all(groupId, excludeMessageId || '', ...keywords.map(word => `%${word}%`));
-    const recentIds = new Set(recentRows.map(row => row.message_id));
+    const hashes = keywords.map(createBlindIndex);
+    const matches = searchMessagesByTerms.all(
+      groupId, excludeMessageId || '', ...hashes,
+      ...Array(8 - hashes.length).fill('')
+    );
+    const recentIds = new Set(recentMessages.map(row => row.message_id));
     relevantRows = matches
       .filter(row => !recentIds.has(row.message_id))
       .map(row => ({
-        row,
-        score: keywords.reduce((score, word) => score + (String(row.content).toLocaleLowerCase('id-ID').includes(word) ? 1 : 0), 0)
+        row: { ...row, content: decryptText(row.content), sender_name: decryptText(row.sender_name) },
+        score: Number(row.match_score)
       }))
       .filter(match => match.score > 0)
       .sort((a, b) => b.score - a.score || Number(b.row.sent_at) - Number(a.row.sent_at))
@@ -123,7 +174,7 @@ export function getRelevantGroupHistory(groupId, question, excludeMessageId = ''
       .map(match => match.row);
   }
 
-  const combined = [...new Map([...recentRows, ...relevantRows]
+  const combined = [...new Map([...recentMessages, ...relevantRows]
     .map(row => [row.message_id, row])).values()]
     .sort((a, b) => Number(a.sent_at) - Number(b.sent_at));
   const selected = [];
@@ -150,7 +201,17 @@ export function getChatHistoryStats(groupId) {
 }
 
 export function clearGroupChatHistory(groupId) {
-  return Number(deleteGroupMessages.run(groupId).changes || 0);
+  database.exec('BEGIN IMMEDIATE');
+  try {
+    deleteGroupTerms.run(groupId);
+    const deleted = Number(deleteGroupMessages.run(groupId).changes || 0);
+    database.exec('COMMIT');
+    database.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    return deleted;
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 export function closeChatHistoryDatabase() {
