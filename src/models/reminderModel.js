@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import cron from 'node-cron';
-import { TZ, REMINDER_CRON, TARGET_GROUP, stateDir, stateFile, remindersFile, messageFile } from '../config.js';
+import { REMINDER_CRON, TARGET_GROUP, stateDir, stateFile, remindersFile, messageFile } from '../config.js';
 import { generateWithFallback, runAiJob } from '../services/aiService.js';
 
 const MAX_NAME = 80;
@@ -256,7 +256,7 @@ export async function sendScheduledReminder(client, isReady, reminderId) {
       reminders[index].lastSentAt = new Date().toISOString();
       persistReminders();
     }
-    console.log(`Pengingat "${reminder.name}" terkirim (${reminder.cronExpressions.join(' | ')}, ${TZ}).`);
+    console.log(`Pengingat "${reminder.name}" terkirim (${reminder.cronExpressions.join(' | ')}, ${getPrayerReminderSettings().timezone}).`);
   } catch (error) {
     console.error(`Gagal mengirim reminder "${reminder.name}":`, error.message);
   }

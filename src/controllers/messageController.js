@@ -1,9 +1,9 @@
 // Controller menerima pesan WhatsApp, memvalidasi perintah, lalu memanggil model dan layanan.
 import fs from "node:fs";
 import {
-  TZ, TARGET_GROUP, AI_MODEL, AI_MODELS, MAX_MODEL_PER_REQUEST, stateDir, botMentionIdsFile
+  TARGET_GROUP, AI_MODEL, AI_MODELS, MAX_MODEL_PER_REQUEST, stateDir, botMentionIdsFile
 } from "../config.js";
-import { state, saveState, reminderText, getReminders, sendReminderWithAllTag, createReminderVariant } from "../models/reminderModel.js";
+import { state, saveState, reminderText, getReminders, getPrayerReminderSettings, sendReminderWithAllTag, createReminderVariant } from "../models/reminderModel.js";
 import {
   runAiJob, DAILY_LIMIT_MESSAGE, isDailyLimitReached, describeAiError,
   getLastSuccessfulModel, formatTimeWib, getNextModelCandidate,
@@ -14,6 +14,27 @@ import {
   saveMemoryInteraction, resetGroupMemory, getGroupMemoryInfo,
   formatHistoryForAi, getSenderName, getSenderKey, selectMemberContext
 } from "../models/memoryModel.js";
+
+const HELP_MESSAGE = [
+  '🤖 *AiBot WhatsApp*',
+  '',
+  '!ai pertanyaan / @AiBot pertanyaan — Tanya AI di grup',
+  'Balas pesan AiBot — Lanjutkan obrolan tanpa mention',
+  '!schedule — Lihat jadwal reminder',
+  '!status — Status bot',
+  '!model — Status model AI',
+  '!memori — Memori obrolan grup',
+  '!help — Bantuan ini',
+  '!idgrup — Tampilkan ID grup di terminal',
+  '!myid — Tampilkan ID pengirim di terminal',
+  '!daftarbot @AiBot — Aktifkan mention (admin)',
+  '!reminder on / off — Aktif/nonaktif pengingat (admin)',
+  '!testreminder / !testkirim — Kirim pengingat uji (admin)',
+  '!resetai — Reset memori grup (admin)',
+  '',
+  'Pengaturan reminder dan jadwal shalat tersedia di dashboard lokal.'
+].join('\n');
+
 // BOT_MENTION_IDS dapat menambahkan ID @lid jika WhatsApp memakai ID lain.
 function normalizeMentionId(id) {
   if (typeof id === 'string') return id.toLowerCase();
@@ -73,8 +94,11 @@ async function getQuotedBotMessage(msg) {
 export function registerMessageRoutes(client, getIsReady) {
 client.on("message", async msg => {
   try {
-    if (msg.fromMe || !msg.body || !msg.from?.endsWith("@g.us")) return;
+    if (msg.fromMe || !msg.body) return;
     const body = msg.body.trim();
+    // Bantuan bisa dibuka dari chat pribadi dan grup mana pun, termasuk sebelum WA_GROUP_ID diatur.
+    if (body.toLowerCase() === '!help') return msg.reply(HELP_MESSAGE);
+    if (!msg.from?.endsWith('@g.us')) return;
     // Beberapa versi WhatsApp tidak mengisi mentionedIds.
     const writtenMention = /^@AiBot\b/i.test(body);
     const hasMentionMetadata = Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0;
@@ -123,29 +147,12 @@ client.on("message", async msg => {
         : 'ID pengirim belum terdeteksi. Periksa terminal.');
     }
 
-    if (lower === "!help") {
-      return msg.reply(
-        "🤖 *AiBot WhatsApp*\n\n" +
-        "!ai pertanyaan / @AiBot pertanyaan — Tanya AI\n" +
-        "Balas pesan AiBot — Lanjutkan obrolan tanpa mention\n" +
-        "!daftarbot @AiBot — Aktifkan mention (admin, sekali saja)\n" +
-        "!schedule — Lihat jadwal reminder\n" +
-        "!status — Status bot\n" +
-        "!model — Cek urutan model AI dan status fallback\n" +
-        "!memori — Memori gabungan + ringkasan otomatis\n" +
-        "!resetai — Reset memori grup (admin)\n" +
-        "!help — Bantuan\n" +
-        "!idgrup — ID grup\n" +
-        "!reminder on / off — Aktif/nonaktif (admin)\n" +
-        "!testreminder / !testkirim — Kirim reminder uji dengan @all (admin)\n!myid — Tampilkan ID di CMD"
-      );
-    }
     if (lower === "!schedule") {
       const reminders = getReminders();
       const schedule = reminders.length
         ? reminders.map(reminder => `- ${reminder.enabled ? '✅' : '⏸️'} *${reminder.name}*: \`${(reminder.cronExpressions || [reminder.cron]).join(' | ')}\``).join('\n')
         : 'Belum ada reminder yang dibuat.';
-      return msg.reply(`⏰ *Jadwal reminder* (${TZ})\nStatus global: *${state.enabled ? "Aktif" : "Nonaktif"}*\n\n${schedule}`);
+      return msg.reply(`⏰ *Jadwal reminder* (${getPrayerReminderSettings().timezone})\nStatus global: *${state.enabled ? "Aktif" : "Nonaktif"}*\n\n${schedule}`);
     }
     if (lower === "!model") {
       return msg.reply(`🤖 *Status model AI*\n\n${getModelStatus()}\n\nMaks. ${MAX_MODEL_PER_REQUEST} model per pesan. Bot memprioritaskan model pertama lagi setelah masa jeda selesai.`);

@@ -2,9 +2,9 @@
 import cron from "node-cron";
 import QRCode from "qrcode";
 import whatsapp from "whatsapp-web.js";
-import { TZ, REMINDER_CRON, TARGET_GROUP, AI_MODELS, AI_PROVIDER, authDir, puppeteerOptions, validateConfig } from "./src/config.js";
+import { REMINDER_CRON, TARGET_GROUP, AI_MODELS, AI_PROVIDER, authDir, puppeteerOptions, validateConfig } from "./src/config.js";
 import { clearExpiredMemories } from "./src/models/memoryModel.js";
-import { getReminders } from "./src/models/reminderModel.js";
+import { getPrayerReminderSettings, getReminders } from "./src/models/reminderModel.js";
 import { AI_PROVIDER_NAME } from "./src/services/aiService.js";
 import { syncReminderSchedules, stopReminderSchedules } from "./src/services/reminderScheduler.js";
 import { attachMessageRoutes } from "./src/routes/messageRoutes.js";
@@ -84,6 +84,6 @@ async function shutdown(signal) {
 process.once('SIGINT', () => { void shutdown('SIGINT'); });
 process.once('SIGTERM', () => { void shutdown('SIGTERM'); });
 
-console.log(`Menyalakan bot... Zona waktu jadwal: ${TZ}.`);
+console.log(`Menyalakan bot... Zona waktu jadwal: ${getPrayerReminderSettings().timezone}.`);
 client.initialize().catch(error => console.error("Gagal menginisialisasi WhatsApp:", error));
 

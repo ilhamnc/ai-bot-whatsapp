@@ -1,7 +1,6 @@
 // Controller dashboard: menyajikan halaman lokal dan API untuk mengelola reminder.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { TZ } from '../config.js';
 import {
   createReminder, deleteReminder, getPrayerReminderSettings, getReminders, savePrayerReminderSettings, saveState,
   state, updateReminder
@@ -33,7 +32,7 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
   }
   if (request.method === 'GET' && url.pathname === '/api/reminders') {
     return respond(response, 200, {
-      timezone: TZ,
+      timezone: getPrayerReminderSettings().timezone,
       globallyEnabled: state.enabled,
       reminders: getReminders()
     });

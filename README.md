@@ -30,9 +30,9 @@ Aplikasi menyediakan dashboard reminder di `http://127.0.0.1:3030` saat bot berj
 
 Saat pertama kali dijalankan, isi `reminder.txt` dan jadwal lama Senin–Jumat pukul 14.30 WIB otomatis menjadi reminder default. Perubahan dashboard disimpan di `.state/reminders.json`; file lama `reminder.txt` tidak dihapus.
 
-Dashboard dapat menambah, mengedit, mengaktifkan/nonaktifkan, dan menghapus reminder. Setiap reminder mempunyai jadwal cron dan isi pesan sendiri. Zona waktunya `Asia/Jakarta`. Contoh cron: `30 14 * * 1-5` berarti Senin–Jumat pukul 14.30.
+Dashboard dapat menambah, mengedit, mengaktifkan/nonaktifkan, dan menghapus reminder. Setiap reminder mempunyai jadwal cron dan isi pesan sendiri. Zona waktu reminder mengikuti pengaturan lokasi di kanan atas dashboard. Contoh cron: `30 14 * * 1-5` berarti Senin–Jumat pukul 14.30 di zona waktu terpilih.
 
-Pengingat shalat memiliki sakelar terpisah di dashboard. Isi kota/kabupaten, negara, dan zona waktu IANA (contoh `Asia/Jakarta`), lalu simpan. Waktu Subuh, Dzuhur, Asar, Maghrib, dan Isya diambil setiap hari dari API AlAdhan dengan metode perhitungan Kementerian Agama RI (metode 20); periksa hasil hari ini melalui tombol pratinjau. Setiap waktu punya teks sendiri dan AI mencoba memparafrasekan teks secara singkat. Jika AI gagal atau kuota habis, pesan bawaan tetap dikirim. Koneksi internet diperlukan untuk mengambil jadwal harian.
+Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan zona waktu lewat dropdown pengaturan di kanan atas; zona Indonesia ditandai WIB, WITA, atau WIT. Zona waktu terpilih juga dipakai oleh jadwal reminder biasa. Waktu shalat diambil harian dari API AlAdhan dengan metode Kementerian Agama RI (metode 20). Tombol cek jadwal ada di detail jadwal shalat. Pengaturan lama otomatis mencakup semua waktu; pilih semua atau atur waktu tertentu dari detail. Setiap waktu memakai teks yang sudah tersimpan dan AI mencoba memparafrasekannya secara singkat. Jika AI gagal atau kuota habis, teks tersimpan yang dikirim. Koneksi internet diperlukan untuk mengambil jadwal harian.
 
 ## Menyiapkan bot
 
