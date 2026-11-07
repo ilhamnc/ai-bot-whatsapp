@@ -94,7 +94,7 @@ Tuliskan `@all` atau `@semua` pada isi reminder untuk menyebut semua anggota. Pe
 
 ## Data dan deployment
 
-`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; arsip chat disimpan di `.state/chat-history.sqlite`; sesi akun yang masih tertaut disimpan di `.wwebjs_auth`. Simpan kedua direktori pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama. Untuk deployment OCI, lihat [panduan deploy](docs/deploy-oci.md).
+`.env`, sesi WhatsApp, cache, dan `.state` bersifat lokal dan tidak boleh diunggah. Riwayat akun dan pilihan grup disimpan di `.state/bot-settings.json`; arsip chat disimpan di `.state/chat-history.sqlite`; sesi akun yang masih tertaut disimpan di `.wwebjs_auth`. Simpan kedua direktori pada disk persisten jika bot dijalankan di server. Simpan `package-lock.json` agar deployment memakai versi dependency yang sama. Untuk deployment, lihat [panduan Northflank](docs/deploy-northflank.md) atau [panduan OCI](docs/deploy-oci.md).
 
 Bot menggunakan `whatsapp-web.js` yang bergantung pada WhatsApp Web. Pastikan proses bot selalu berjalan agar reminder terjadwal dapat dikirim.
 

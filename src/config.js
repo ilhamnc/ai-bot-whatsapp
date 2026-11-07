@@ -39,7 +39,9 @@ const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ||
 export const puppeteerOptions = {
   headless: true,
   ...(chromePath ? { executablePath: chromePath } : {}),
-  ...(process.env.PUPPETEER_NO_SANDBOX === '1' ? { args: ['--no-sandbox', '--disable-setuid-sandbox'] } : {})
+  ...(process.env.PUPPETEER_NO_SANDBOX === '1'
+    ? { args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] }
+    : {})
 };
 
 export function validateConfig() {

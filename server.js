@@ -24,15 +24,25 @@ function syncSchedules() {
   if (client) syncReminderSchedules(client, () => connectionManager.isReady());
 }
 
-// Dashboard hanya menerima koneksi lokal.
+// Dashboard lokal secara default; hosting container bisa mengatur host dan login.
 const dashboardPort = Number(process.env.DASHBOARD_PORT || 3030);
+const dashboardHost = process.env.DASHBOARD_HOST?.trim() || '127.0.0.1';
+const dashboardUser = process.env.DASHBOARD_USER?.trim() || '';
+const dashboardPassword = process.env.DASHBOARD_PASSWORD || '';
+if ((dashboardUser && !dashboardPassword) || (!dashboardUser && dashboardPassword)) {
+  throw new Error('DASHBOARD_USER dan DASHBOARD_PASSWORD harus diisi bersama.');
+}
+if (!['127.0.0.1', '::1', 'localhost'].includes(dashboardHost) && !dashboardUser) {
+  throw new Error('Dashboard yang menerima koneksi luar wajib memakai DASHBOARD_USER dan DASHBOARD_PASSWORD.');
+}
 const dashboardServer = createDashboardServer(
   syncSchedules,
   () => connectionManager.getInfo(),
-  connectionManager
+  connectionManager,
+  { user: dashboardUser, password: dashboardPassword }
 );
-dashboardServer.listen(dashboardPort, '127.0.0.1', () => {
-  console.log(`Dashboard reminder: http://127.0.0.1:${dashboardPort}`);
+dashboardServer.listen(dashboardPort, dashboardHost, () => {
+  console.log(`Dashboard reminder: http://${dashboardHost}:${dashboardPort}`);
 });
 
 let isStopping = false;
