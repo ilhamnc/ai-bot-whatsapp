@@ -81,7 +81,7 @@ export async function isCalledWithMention(msg, text, client) {
 export function removeBotTag(text) {
   return String(text || '')
     .replace(NATURAL_BOT_PREFIX, ' ')
-    .replace(/@~?(?:AiBot|bot)(?:\s*🤖)?/ig, ' ')
+    .replace(/@~?(?:AiBot|ibot|bot)(?:\s*🤖)?/ig, ' ')
     .replace(/@\d{5,}(?=\s|$)/g, ' ')
     .replace(NATURAL_BOT_SUFFIX, '')
     .replace(/\s+([?!.,])/g, '$1')

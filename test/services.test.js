@@ -13,12 +13,17 @@ import { checkIsAdmin } from '../src/controllers/commandController.js';
 test('mentionService mendeteksi berbagai variasi panggilan bot', () => {
   assert.equal(hasBotNameMention('@AiBot halo'), true);
   assert.equal(hasBotNameMention('@aibot tolong bantu'), true);
+  assert.equal(hasBotNameMention('@ibot tolong bantu'), true);
   assert.equal(hasBotNameMention('bot, apa kabar?'), true);
   assert.equal(hasBotNameMention('aibot: tolong rangkum'), true);
+  assert.equal(hasBotNameMention('ibot, tolong rangkum'), true);
   assert.equal(hasBotNameMention('Ini enak ga bot?'), true);
+  assert.equal(hasBotNameMention('Ini enak ga ibot?'), true);
+  assert.equal(hasBotNameMention('Ini enak ga aibot?'), true);
   assert.equal(hasBotNameMention('Ini enak ga bot'), true);
   assert.equal(hasBotNameMention('Ini kira2 enak ga @~AiBot 🤖 ?'), true);
   assert.equal(hasBotNameMention('menurut bot gimana?'), true);
+  assert.equal(hasBotNameMention('menurut ibot gimana?'), true);
   assert.equal(hasBotNameMention('cuaca hari ini cerah'), false);
   assert.equal(hasBotNameMention('sistem bot ini bagus'), false);
 });
@@ -26,9 +31,13 @@ test('mentionService mendeteksi berbagai variasi panggilan bot', () => {
 test('mentionService membersihkan tag dan mengekstrak pertanyaan', () => {
   assert.equal(extractQuestionText('!ai cara membuat kue'), 'cara membuat kue');
   assert.equal(extractQuestionText('@AiBot rekomendasi film'), 'rekomendasi film');
+  assert.equal(extractQuestionText('@ibot rekomendasi film'), 'rekomendasi film');
   assert.equal(extractQuestionText('bot, rekomendasi buku'), 'rekomendasi buku');
   assert.equal(extractQuestionText('aibot: apa itu nodejs'), 'apa itu nodejs');
+  assert.equal(extractQuestionText('ibot: apa itu nodejs'), 'apa itu nodejs');
   assert.equal(extractQuestionText('Ini enak ga bot?'), 'Ini enak ga');
+  assert.equal(extractQuestionText('Ini enak ga ibot?'), 'Ini enak ga');
+  assert.equal(extractQuestionText('Ini enak ga aibot?'), 'Ini enak ga');
   assert.equal(extractQuestionText('Ini kira2 enak ga @~AiBot 🤖 ?'), 'Ini kira2 enak ga?');
 });
 

@@ -70,7 +70,7 @@ export function buildChatSystemPrompt({
   const customStyleText = styleInstruction.trim();
 
   const baseInstructions = [
-    'Kamu adalah AiBot, asisten AI cerdas dan ramah untuk grup WhatsApp.',
+    'Kamu adalah AiBot (bisa disapa sebagai AiBot, iBot, atau Bot), asisten AI cerdas dan ramah untuk grup WhatsApp.',
     '',
     'KARAKTER & CARA BICARA:',
     '- Bicaralah dengan bahasa Indonesia yang luwes, natural, dan mengalir seperti teman di grup WhatsApp.',

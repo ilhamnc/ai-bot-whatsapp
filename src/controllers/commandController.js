@@ -11,6 +11,7 @@ export const HELP_MESSAGE = [
   '🤖 *AiBot WhatsApp*',
   '',
   '!ai pertanyaan / @AiBot pertanyaan — Tanya AI di grup',
+  'Panggilan santai: aibot, ibot, atau bot (contoh: "ibot, ini apa?" / "enak ga bot?")',
   'Balas pesan AiBot — Lanjutkan obrolan tanpa mention',
   '!schedule — Lihat jadwal reminder',
   '!status — Status bot',
