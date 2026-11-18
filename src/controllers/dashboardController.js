@@ -7,6 +7,7 @@ import {
   state, updateReminder
 } from '../models/reminderModel.js';
 import { previewPrayerTimes } from '../services/prayerReminderService.js';
+import { getAiStyleSettings, saveAiStyleSettings } from '../models/aiStyleModel.js';
 
 const viewPath = fileURLToPath(new URL('../views/reminders.html', import.meta.url));
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -87,6 +88,13 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
   }
   if (request.method === 'PUT' && url.pathname === '/api/settings/groups') {
     try { return respond(response, 200, updateGroupSettings(await readJson(request))); }
+    catch (error) { return respond(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/settings/ai-style') {
+    return respond(response, 200, getAiStyleSettings());
+  }
+  if (request.method === 'PUT' && url.pathname === '/api/settings/ai-style') {
+    try { return respond(response, 200, saveAiStyleSettings(await readJson(request))); }
     catch (error) { return respond(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/settings/groups/manual') {

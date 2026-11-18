@@ -1,17 +1,21 @@
 // Layanan AI: antrean, pembatasan sementara, adapter provider, dan pemilihan model cadangan.
 import { GoogleGenAI } from '@google/genai';
 import {
-  AI_API_KEY, AI_BASE_URL, AI_MODELS, AI_PROVIDER, TZ, MAX_MODEL_PER_REQUEST
+  AI_MODEL_CANDIDATES, AI_PROVIDER, TZ, MAX_MODEL_PER_REQUEST,
+  getProviderApiKey, getProviderBaseUrl
 } from '../config.js';
 
 const cooldowns = new Map();
 const dailyLimits = new Map();
+const providerCooldowns = new Map();
 const lastSuccessfulModel = { chat: null, ringkasan: null, reminder: null };
 const aiJobs = [];
 let runningJobs = 0;
-let geminiClient;
+const geminiClients = new Map();
 
-export const AI_PROVIDER_NAME = AI_PROVIDER === 'gemini' ? 'Gemini' : 'OpenAI-compatible';
+const providerNames = [...new Set(AI_MODEL_CANDIDATES.map(candidate => candidate.provider))]
+  .map(provider => provider === 'openai' ? 'OpenAI' : provider[0].toUpperCase() + provider.slice(1));
+export const AI_PROVIDER_NAME = providerNames.join(' → ') || AI_PROVIDER;
 export const DAILY_LIMIT_MESSAGE = 'Batas penggunaan AI hari ini sudah tercapai. Coba lagi setelah kuota layanan direset.';
 
 // Membatasi satu permintaan AI aktif agar memori bersama tidak berubah bersamaan.
@@ -45,14 +49,33 @@ function isCoolingDown(model) {
   return Date.now() < (cooldowns.get(model) || 0);
 }
 
+function isProviderCoolingDown(provider) {
+  return Date.now() < (providerCooldowns.get(provider) || 0);
+}
+
 function errorInfo(error) {
-  const raw = [error?.message, error?.status, error?.code, error?.details]
+  const raw = [error?.message, error?.status, error?.code, error?.details, error?.name]
     .filter(Boolean).join(' ');
+  const symbolicCode = /RESOURCE_EXHAUSTED|RATE_LIMIT/i.test(raw) ? 429
+    : /UNAUTHENTICATED|API_KEY_INVALID/i.test(raw) ? 401
+      : /PERMISSION_DENIED/i.test(raw) ? 403
+        : /NOT_FOUND/i.test(raw) ? 404
+          : /INVALID_ARGUMENT/i.test(raw) ? 400
+            : /UNAVAILABLE/i.test(raw) ? 503 : 0;
   const code = Number(error?.status || error?.code || 0)
-    || Number(raw.match(/\b(400|401|403|404|408|429|500|502|503|504)\b/)?.[1] || 0);
+    || Number(raw.match(/\b(400|401|402|403|404|408|413|429|500|502|503|504)\b/)?.[1] || 0)
+    || symbolicCode;
   const daily = code === 429 && /(?:per[ _-]?day|requests? per day|tokens? per day|\brpd\b|daily|quota_exceeded)/i.test(raw)
     && !/(?:per[ _-]?minute|\brpm\b|\btpm\b)/i.test(raw);
   return { code: code, daily: daily, raw: raw };
+}
+
+function safeErrorSummary(raw) {
+  return String(raw || '')
+    .replace(/data:image\/[^;\s]+;base64,[A-Za-z0-9+/=]+/gi, '[gambar base64]')
+    .replace(/\b(?:Bearer\s+|gsk_|AIza|sk-)[A-Za-z0-9._-]{12,}/gi, '[redacted credential]')
+    .replace(/\s+/g, ' ')
+    .slice(0, 320);
 }
 
 export function describeAiError(error) {
@@ -70,21 +93,25 @@ export function getLastSuccessfulModel() {
 }
 
 export function getNextModelCandidate() {
-  return AI_MODELS.find(model => !isDailyLimitReached(model) && !isCoolingDown(model)) || null;
+  const candidate = AI_MODEL_CANDIDATES.find(item => getProviderApiKey(item.provider)
+    && !isDailyLimitReached(item.id) && !isCoolingDown(item.id) && !isProviderCoolingDown(item.provider));
+  return candidate?.id || null;
 }
 
 export function getModelStatus() {
-  return AI_MODELS.map(model => {
-    const status = isDailyLimitReached(model) ? 'batas harian terdeteksi'
-      : isCoolingDown(model) ? 'jeda sementara' : 'siap dicoba';
-    return `${model}: ${status}`;
+  return AI_MODEL_CANDIDATES.map(candidate => {
+    const status = !getProviderApiKey(candidate.provider) ? 'API key belum diatur'
+      : isDailyLimitReached(candidate.id) ? 'batas harian terdeteksi'
+        : isProviderCoolingDown(candidate.provider) || isCoolingDown(candidate.id) ? 'jeda sementara'
+          : isCoolingDown(`${candidate.id}:image`) ? 'jeda gambar' : 'siap dicoba';
+    return `${candidate.id}: ${status}${candidate.supportsImage ? ' · gambar' : ''}`;
   }).join('\n');
 }
 
 function geminiOptions(model, config, attempt) {
   const thinkingConfig = model.startsWith('gemini-2.5-')
     ? { thinkingBudget: 0 }
-    : { thinkingLevel: model === 'gemini-3.8-flash' ? 'low' : 'minimal' };
+    : { thinkingLevel: /^gemini-3\.[78]-flash$/.test(model) ? 'low' : 'minimal' };
   return {
     ...config,
     thinkingConfig: thinkingConfig,
@@ -96,8 +123,25 @@ function geminiOptions(model, config, attempt) {
   };
 }
 
-function getTextParts(parts = []) {
-  return parts.map(bagian => typeof bagian === 'string' ? bagian : bagian?.text || '').join('');
+function toOpenAiContent(parts = []) {
+  const content = [];
+  for (const part of parts) {
+    if (typeof part === 'string') {
+      if (part) content.push({ type: 'text', text: part });
+    } else if (part?.text) {
+      content.push({ type: 'text', text: part.text });
+    } else if (part?.inlineData?.data) {
+      const mimeType = part.inlineData.mimeType || 'image/jpeg';
+      content.push({
+        type: 'image_url',
+        image_url: { url: `data:${mimeType};base64,${part.inlineData.data}` }
+      });
+    }
+  }
+  if (!content.some(part => part.type === 'image_url')) {
+    return content.map(part => part.text).join('');
+  }
+  return content;
 }
 
 function toOpenAiMessages(contents, systemInstruction) {
@@ -108,31 +152,40 @@ function toOpenAiMessages(contents, systemInstruction) {
   } else {
     for (const item of contents || []) {
       const role = item.role === 'model' || item.role === 'assistant' ? 'assistant' : 'user';
-      const content = Array.isArray(item.parts) ? getTextParts(item.parts) : String(item.content || '');
+      const content = Array.isArray(item.parts) ? toOpenAiContent(item.parts) : String(item.content || '');
       if (content) messages.push({ role: role, content: content });
     }
   }
   return messages;
 }
 
-async function generateWithGemini(model, contents, config, attempt) {
-  geminiClient ||= new GoogleGenAI({ apiKey: AI_API_KEY });
-  return geminiClient.models.generateContent({
-    model: model,
+function getGeminiClient(apiKey) {
+  if (!geminiClients.has(apiKey)) geminiClients.set(apiKey, new GoogleGenAI({ apiKey }));
+  return geminiClients.get(apiKey);
+}
+
+async function generateWithGemini(candidate, contents, config, attempt, apiKey) {
+  return getGeminiClient(apiKey).models.generateContent({
+    model: candidate.model,
     contents: contents,
-    config: geminiOptions(model, config, attempt)
+    config: geminiOptions(candidate.model, config, attempt)
   });
 }
 
-async function generateWithOpenAiCompatible(model, contents, config) {
-  const response = await fetch(`${AI_BASE_URL.replace(/\/$/, '')}/chat/completions`, {
+async function generateWithOpenAiCompatible(candidate, contents, config, apiKey, attempt) {
+  const baseUrl = getProviderBaseUrl(candidate.provider);
+  const configuredTimeout = config.httpOptions?.timeout ?? 18000;
+  const timeout = attempt === 1 ? configuredTimeout : Math.min(configuredTimeout, 12000);
+  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
-    headers: { authorization: `Bearer ${AI_API_KEY}`, 'content-type': 'application/json' },
-    signal: AbortSignal.timeout(config.httpOptions?.timeout ?? 18000),
+    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+    signal: AbortSignal.timeout(timeout),
     body: JSON.stringify({
-      model: model,
+      model: candidate.model,
       messages: toOpenAiMessages(contents, config.systemInstruction),
-      max_tokens: config.maxOutputTokens ?? 4000
+      ...(candidate.provider === 'groq'
+        ? { max_completion_tokens: config.maxOutputTokens ?? 4000 }
+        : { max_tokens: config.maxOutputTokens ?? 4000 })
     })
   });
   const payload = await response.json().catch(() => ({}));
@@ -156,38 +209,61 @@ async function generateWithOpenAiCompatible(model, contents, config) {
 export async function generateWithFallback({ contents: contents, config: config = {}, purpose: purpose = 'chat' }) {
   let lastError;
   let attempted = 0;
-  for (const model of AI_MODELS) {
-    if (isDailyLimitReached(model) || isCoolingDown(model)) continue;
+  const hasImage = typeof contents !== 'string' && (contents || []).some(item =>
+    (item.parts || []).some(part => Boolean(part?.inlineData?.data)));
+  const usableCandidates = AI_MODEL_CANDIDATES.filter(candidate =>
+    getProviderApiKey(candidate.provider) && (!hasImage || candidate.supportsImage));
+  for (const candidate of usableCandidates) {
+    if (isDailyLimitReached(candidate.id) || isCoolingDown(candidate.id)
+      || (hasImage && isCoolingDown(`${candidate.id}:image`)) || isProviderCoolingDown(candidate.provider)) continue;
     if (attempted >= MAX_MODEL_PER_REQUEST) break;
     attempted++;
     try {
-      const result = AI_PROVIDER === 'gemini'
-        ? await generateWithGemini(model, contents, config, attempted)
-        : await generateWithOpenAiCompatible(model, contents, config);
-      if (String(result?.text || '').trim() && purpose in lastSuccessfulModel) {
-        lastSuccessfulModel[purpose] = { model: model, at: Date.now() };
+      const apiKey = getProviderApiKey(candidate.provider);
+      const result = candidate.provider === 'gemini'
+        ? await generateWithGemini(candidate, contents, config, attempted, apiKey)
+        : await generateWithOpenAiCompatible(candidate, contents, config, apiKey, attempted);
+      if (!String(result?.text || '').trim()) {
+        const error = new Error('Model tidak mengembalikan jawaban teks.');
+        error.status = 503;
+        throw error;
       }
-      console.log(`[AI] ${purpose}: berhasil dengan ${model} (${AI_PROVIDER_NAME})`);
-      return { result: result, model: model };
+      if (String(result?.text || '').trim() && purpose in lastSuccessfulModel) {
+        lastSuccessfulModel[purpose] = { model: candidate.model, provider: candidate.provider, at: Date.now() };
+      }
+      console.log(`[AI] ${purpose}: berhasil dengan ${candidate.provider}:${candidate.model}`);
+      return { result: result, model: candidate.model, provider: candidate.provider };
     } catch (error) {
       lastError = error;
       const { code, daily, raw } = errorInfo(error);
-      if (daily) dailyLimits.set(model, todayInPacific());
-      else if (code === 429) cooldowns.set(model, Date.now() + 60_000);
-      else if ([408, 500, 502, 503, 504].includes(code) || /timeout|UNAVAILABLE|AbortError/i.test(raw)) {
-        cooldowns.set(model, Date.now() + 30_000);
-      } else if (code === 403 || code === 404) cooldowns.set(model, Date.now() + 12 * 60 * 60_000);
+      if (daily) dailyLimits.set(candidate.id, todayInPacific());
+      else if (code === 429) cooldowns.set(candidate.id, Date.now() + 60_000);
+      else if ([408, 500, 502, 503, 504].includes(code)
+        || /timeout|UNAVAILABLE|AbortError|fetch failed|ECONNRESET|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|UND_ERR_/i.test(raw)) {
+        cooldowns.set(candidate.id, Date.now() + 30_000);
+      } else if (code === 401) providerCooldowns.set(candidate.provider, Date.now() + 12 * 60 * 60_000);
+      else if (code === 402) providerCooldowns.set(candidate.provider, Date.now() + 12 * 60 * 60_000);
+      else if (code === 400 || code === 403 || code === 404 || code === 413) {
+        cooldowns.set(hasImage ? `${candidate.id}:image` : candidate.id, Date.now() + 12 * 60 * 60_000);
+      }
       else throw error;
-      console.warn(`[AI] ${purpose}: ${model} gagal (${code || 'error'}); mencoba model berikutnya bila tersedia.`);
+      console.warn(`[AI] ${purpose}: ${candidate.provider}:${candidate.model} gagal (${code || 'error'}): ${safeErrorSummary(raw) || 'detail tidak tersedia'}; mencoba kandidat berikutnya bila tersedia.`);
     }
   }
 
-  const allDaily = AI_MODELS.every(isDailyLimitReached);
-  const allUnavailable = AI_MODELS.every(model => isDailyLimitReached(model) || isCoolingDown(model));
+  const configuredCandidates = AI_MODEL_CANDIDATES.filter(candidate =>
+    getProviderApiKey(candidate.provider) && (!hasImage || candidate.supportsImage));
+  const allDaily = configuredCandidates.length > 0 && configuredCandidates.every(candidate => isDailyLimitReached(candidate.id));
+  const allUnavailable = configuredCandidates.length === 0 || configuredCandidates.every(candidate =>
+    isDailyLimitReached(candidate.id) || isCoolingDown(candidate.id)
+      || (hasImage && isCoolingDown(`${candidate.id}:image`)) || isProviderCoolingDown(candidate.provider));
   if (!lastError) {
-    const error = new Error('Semua model sedang jeda atau tidak dapat dicoba.');
+    const error = new Error(hasImage
+      ? 'Tidak ada model vision berkey yang dapat dicoba.'
+      : 'Semua model sedang jeda atau tidak dapat dicoba.');
     error.allModelsUnavailable = true;
     error.allModelsDaily = allDaily;
+    error.noVisionModelAvailable = hasImage && usableCandidates.length === 0;
     throw error;
   }
   lastError.allModelsDaily = allDaily;

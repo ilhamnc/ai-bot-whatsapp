@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import makeWASocket, {
-  BufferJSON, DisconnectReason, initAuthCreds, jidNormalizedUser, proto
+  BufferJSON, DisconnectReason, downloadMediaMessage, initAuthCreds, jidNormalizedUser, proto
 } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import { decryptText, encryptText, isEncrypted } from './encryptionService.js';
@@ -114,7 +114,7 @@ function messageDetails(raw) {
   const type = Object.keys(content).find(key => key.endsWith('Message')) || 'conversation';
   const item = content[type] || {};
   const body = content.conversation || item.text || item.caption || '';
-  return { type, body, context: item.contextInfo || {} };
+  return { type, body, context: item.contextInfo || {}, mimeType: item.mimetype || '' };
 }
 
 export class BaileysClient extends EventEmitter {
@@ -180,7 +180,7 @@ export class BaileysClient extends EventEmitter {
   }
 
   normalizeMessage(raw) {
-    const { type, body, context } = messageDetails(raw);
+    const { type, body, context, mimeType } = messageDetails(raw);
     const from = raw.key.remoteJid;
     const quoted = context.quotedMessage
       ? messageDetails({ message: context.quotedMessage }) : null;
@@ -197,6 +197,16 @@ export class BaileysClient extends EventEmitter {
       body: String(body),
       caption: String(body),
       type,
+      hasImage: type === 'imageMessage',
+      mediaMimeType: mimeType || (type === 'imageMessage' ? 'image/jpeg' : ''),
+      downloadMedia: type === 'imageMessage' ? async () => downloadMediaMessage(
+        raw, 'buffer', {}, {
+          logger: whatsappLogger,
+          reuploadRequest: this.socket?.updateMediaMessage
+            ? message => this.socket.updateMediaMessage(message)
+            : undefined
+        }
+      ) : undefined,
       timestamp: Number(raw.messageTimestamp) || Math.floor(Date.now() / 1000),
       mentionedIds: context.mentionedJid || [],
       hasQuotedMsg: Boolean(quoted),

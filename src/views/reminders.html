@@ -43,11 +43,12 @@
   </section>
   <div id="pesanStatus" class="pesan-status" role="status" aria-live="polite"></div>
   <dialog id="dialogPengaturan" class="panel-form" aria-labelledby="judulPengaturan">
-    <div class="kepala-form"><div><h2 id="judulPengaturan">Pengaturan AiBot</h2><p>Kelola nomor WhatsApp, grup target, dan zona waktu.</p></div><button id="tutupPengaturan" type="button">Tutup</button></div>
+    <div class="kepala-form"><div><h2 id="judulPengaturan">Pengaturan AiBot</h2><p>Kelola akun, grup target, zona waktu, dan gaya bahasa.</p></div><button id="tutupPengaturan" type="button">Tutup</button></div>
     <nav class="menu-pengaturan" aria-label="Menu pengaturan">
       <button id="menuWaBot" class="terpilih" type="button">Set WA Bot</button>
       <button id="menuGrupBot" type="button">ID Grup Bot</button>
       <button id="menuZonaWaktu" type="button">Zona Waktu</button>
+      <button id="menuGayaAi" type="button">Gaya AI</button>
     </nav>
     <div id="pesanPengaturan" class="status-pengaturan" role="status" aria-live="polite"></div>
     <section id="panelWaBot" class="pengaturan-bagian" aria-labelledby="judulWaBot">
@@ -85,6 +86,17 @@
         </select><div id="labelZonaIndonesia" class="bantuan"></div></div>
       </div>
       <div class="daftar-tombol"><button id="simpanPengaturanLokasi" class="utama" type="button">Simpan pengaturan</button></div>
+    </section>
+    <section id="panelGayaAi" class="pengaturan-bagian" aria-labelledby="judulGayaAi" hidden>
+      <h3 id="judulGayaAi">Konteks dan gaya bahasa AiBot</h3>
+      <p>Atur nada bicara, pilihan kata, panjang jawaban, atau konteks tambahan. Perubahan berlaku pada pertanyaan chat berikutnya.</p>
+      <div class="kolom-field">
+        <label for="gayaAi">Instruksi gaya bahasa dan konteks</label>
+        <textarea id="gayaAi" maxlength="3000" rows="8" placeholder="Contoh: Gunakan bahasa Indonesia sehari-hari, santai, singkat, dan tidak kaku."></textarea>
+        <div id="hitungGayaAi" class="bantuan">0/3000 karakter</div>
+        <div class="bantuan">Pengaturan ini mengubah cara AiBot menjawab. Aturan privasi anggota dan keamanan tetap berlaku. Teks disimpan terenkripsi di data persisten bot.</div>
+      </div>
+      <div class="daftar-tombol"><button id="simpanGayaAi" class="utama" type="button">Simpan gaya AiBot</button><button id="pulihkanGayaAi" type="button">Pulihkan default</button></div>
     </section>
   </dialog>
   <dialog id="dialogBantuan" class="panel-form" aria-labelledby="judulBantuan">
@@ -192,6 +204,8 @@
   let noticeTimer;
   let accountActionPending = false;
   let accountListSignature = '';
+  let defaultAiStyle = '';
+  let aiStyleSavePending = false;
 
   function showNotice(message, hasError = false) {
     noticeElement.textContent = message;
@@ -470,15 +484,47 @@
     element.classList.toggle('galat', hasError);
   }
 
+  function updateAiStyleCounter() {
+    const input = document.querySelector('#gayaAi');
+    document.querySelector('#hitungGayaAi').textContent = `${input.value.length}/3000 karakter`;
+  }
+
+  async function loadAiStyleSettings() {
+    try {
+      const settings = await callApi('/api/settings/ai-style');
+      defaultAiStyle = settings.defaultStyle || '';
+      document.querySelector('#gayaAi').value = settings.styleInstruction || defaultAiStyle;
+      updateAiStyleCounter();
+    } catch (error) { settingsNotice(error.message, true); }
+  }
+
+  async function saveAiStyleSettings(styleInstruction, successMessage) {
+    if (aiStyleSavePending) return;
+    aiStyleSavePending = true;
+    try {
+      const settings = await callApi('/api/settings/ai-style', {
+        method: 'PUT', body: JSON.stringify({ styleInstruction })
+      });
+      defaultAiStyle = settings.defaultStyle || defaultAiStyle;
+      document.querySelector('#gayaAi').value = settings.styleInstruction || defaultAiStyle;
+      updateAiStyleCounter();
+      settingsNotice(successMessage);
+    } catch (error) { settingsNotice(error.message, true); }
+    finally { aiStyleSavePending = false; }
+  }
+
   function showSettingsMenu(menu) {
     document.querySelector('#panelWaBot').hidden = menu !== 'wa';
     document.querySelector('#panelGrupBot').hidden = menu !== 'groups';
     document.querySelector('#panelZonaWaktu').hidden = menu !== 'zone';
+    document.querySelector('#panelGayaAi').hidden = menu !== 'style';
     document.querySelector('#menuWaBot').classList.toggle('terpilih', menu === 'wa');
     document.querySelector('#menuGrupBot').classList.toggle('terpilih', menu === 'groups');
     document.querySelector('#menuZonaWaktu').classList.toggle('terpilih', menu === 'zone');
+    document.querySelector('#menuGayaAi').classList.toggle('terpilih', menu === 'style');
     settingsNotice('');
     if (menu === 'groups') void loadGroupSettings();
+    if (menu === 'style') void loadAiStyleSettings();
     if (menu === 'zone' && prayerSettings) {
       document.querySelector('#shalatNegara').value = prayerSettings.country;
       populateCities(prayerSettings.country, prayerSettings.city, prayerSettings.timezone);
@@ -551,6 +597,14 @@
   document.querySelector('#menuWaBot').addEventListener('click', () => showSettingsMenu('wa'));
   document.querySelector('#menuGrupBot').addEventListener('click', () => showSettingsMenu('groups'));
   document.querySelector('#menuZonaWaktu').addEventListener('click', () => showSettingsMenu('zone'));
+  document.querySelector('#menuGayaAi').addEventListener('click', () => showSettingsMenu('style'));
+  document.querySelector('#gayaAi').addEventListener('input', updateAiStyleCounter);
+  document.querySelector('#simpanGayaAi').addEventListener('click', () => {
+    void saveAiStyleSettings(document.querySelector('#gayaAi').value, 'Gaya bahasa AiBot berhasil disimpan.');
+  });
+  document.querySelector('#pulihkanGayaAi').addEventListener('click', () => {
+    if (defaultAiStyle) void saveAiStyleSettings('', 'Gaya bahasa default dipulihkan.');
+  });
   document.querySelector('#muatUlangGrupBot').addEventListener('click', () => void loadGroupSettings());
   document.querySelector('#tambahGrupManual').addEventListener('click', async () => {
     try {
