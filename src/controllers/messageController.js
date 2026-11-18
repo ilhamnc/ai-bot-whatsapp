@@ -124,6 +124,28 @@ function normalizeMentionId(id) {
   if (typeof id === 'string') return id.toLowerCase();
   return String(id?._serialized || id?.id?._serialized || id?.id || '').toLowerCase();
 }
+const ROBUST_BOT_NAME_MENTION = /@~?AiBot(?=$|[\s\p{P}\p{S}\p{Cf}])/iu;
+function normalizeMentionText(text) {
+  return String(text || '').normalize('NFKC')
+    .replace(/[\u200B-\u200F\uFEFF\u2060\uFE0E\uFE0F]/g, '')
+    .replace(/\u00A0/g, ' ');
+}
+function hasBotNameMention(text) {
+  return ROBUST_BOT_NAME_MENTION.test(normalizeMentionText(text));
+}
+function hasOwnPhoneNumberMention(text, client, extraIds = []) {
+  const ownNumbers = new Set();
+  const ownUser = String(client?.info?.wid?.user || '');
+  if (/^\d{5,}$/.test(ownUser)) ownNumbers.add(ownUser);
+  for (const id of [client?.info?.wid?._serialized, ...extraIds]) {
+    const match = String(id || '').toLowerCase().match(/^(\d+)(?::\d+)?@(c\.us|s\.whatsapp\.net)$/);
+    if (match) ownNumbers.add(match[1]);
+  }
+  if (!ownNumbers.size) return false;
+  const writtenNumbers = [...normalizeMentionText(text).matchAll(/(?:^|\s)@(\d{5,})(?=$|[\s.,!?;:])/g)]
+    .map(match => match[1]);
+  return writtenNumbers.some(number => ownNumbers.has(number));
+}
 let botMentionIds = readSecureJson(botMentionIdsFile, []);
 if (!Array.isArray(botMentionIds)) botMentionIds = [];
 
@@ -140,15 +162,14 @@ function saveBotMentionId(id) {
 async function isCalledWithMention(msg, text, client) {
   const mentions = (Array.isArray(msg.mentionedIds) ? msg.mentionedIds : [])
     .map(normalizeMentionId).filter(Boolean);
-  if (new RegExp(`^${BOT_NAME_MENTION.source}`, 'i').test(text)) return true;
+  if (hasBotNameMention(text)) return true;
   if (mentions.length === 0) return false;
   const extraIds = (process.env.BOT_MENTION_IDS || '')
     .split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
   const savedIds = [...extraIds, ...registeredMentionIds()];
   if (await client.isOwnMention(msg.mentionedIds, savedIds)) return true;
-  // Fallback aman untuk nama yang sudah dikenal: harus ada metadata mention asli.
-  if (BOT_NAME_MENTION.test(text)) return true;
-  return false;
+  // WhatsApp kadang menaruh nomor akun di teks, sementara metadata mention memakai LID.
+  return hasOwnPhoneNumberMention(text, client, savedIds);
 }
 function removeBotTag(text) {
   return text.replace(/@~?AiBot(?:\s*🤖)?/ig, ' ')
@@ -186,10 +207,16 @@ client.on("message", async msg => {
     if (body.toLowerCase() === '!help') return msg.reply(HELP_MESSAGE);
     if (!msg.from?.endsWith('@g.us')) return;
     // Beberapa versi WhatsApp tidak mengisi mentionedIds.
-    const writtenMention = new RegExp(`^${BOT_NAME_MENTION.source}`, 'i').test(body);
+    const namedBotMention = hasBotNameMention(body);
     const hasMentionMetadata = Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0;
+    const extraMentionIds = [
+      ...(process.env.BOT_MENTION_IDS || '').split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
+      ...registeredMentionIds()
+    ];
+    const numericBotMention = hasMentionMetadata && hasOwnPhoneNumberMention(body, client, extraMentionIds);
+    const writtenMention = namedBotMention || numericBotMention;
     if (msg.from === getTargetGroup() && (writtenMention || hasMentionMetadata)) {
-      console.log('[MENTION] masuk | @AiBot:', writtenMention, '| jumlah metadata:', Array.isArray(msg.mentionedIds) ? msg.mentionedIds.length : 0);
+      console.log(`[MENTION] masuk | nama=${namedBotMention} | nomor bot=${numericBotMention} | jumlah metadata=${Array.isArray(msg.mentionedIds) ? msg.mentionedIds.length : 0}`);
     }
     if (!body.startsWith('!') && !writtenMention && !hasMentionMetadata && !msg.hasQuotedMsg && !msg?._data?.quotedMsg) return;
 
