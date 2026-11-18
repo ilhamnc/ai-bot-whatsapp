@@ -238,6 +238,17 @@ export async function createReminderVariant(text, label = 'reminder') {
   }
 }
 
+// Pengiriman uji coba untuk pengingat tertentu ke grup target.
+export async function testSendSpecificReminder(client, reminderId) {
+  const reminder = getReminderById(reminderId);
+  if (!reminder) throw new Error('Pengingat tidak ditemukan.');
+  const targetGroup = getTargetGroup();
+  if (!targetGroup) throw new Error('Grup target belum dipilih di dashboard.');
+  const testText = await createReminderVariant(reminder.text, `Uji kirim "${reminder.name}"`);
+  await sendReminderWithAllTag(client, targetGroup, `🧪 *UJI KIRIM PENGINGAT*\n*${reminder.name}*\n\n${testText}`);
+  return { reminderId: reminder.id, name: reminder.name };
+}
+
 // Setiap tugas cron mengirim pengingatnya sendiri selama status global dan item aktif.
 export async function sendScheduledReminder(client, isReady, reminderId) {
   const reminder = getReminderById(reminderId);

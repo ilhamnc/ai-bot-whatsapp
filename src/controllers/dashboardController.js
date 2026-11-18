@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getGroupSettings, registerGroupFromCommand, updateGroupName, updateGroupSettings } from '../models/botSettingsModel.js';
 import {
-  createReminder, deleteReminder, getPrayerReminderSettings, getReminders, savePrayerReminderSettings, saveState,
-  state, updateReminder
+  createReminder, createReminderVariant, deleteReminder, getPrayerReminderSettings, getReminders,
+  savePrayerReminderSettings, saveState, state, testSendSpecificReminder, updateReminder
 } from '../models/reminderModel.js';
 import { previewPrayerTimes } from '../services/prayerReminderService.js';
 import { getAiStyleSettings, saveAiStyleSettings } from '../models/aiStyleModel.js';
@@ -143,6 +143,32 @@ export async function handleDashboardRequest(request, response, syncSchedules, g
       const reminder = createReminder(await readJson(request));
       syncSchedules();
       return respond(response, 201, reminder);
+    } catch (error) {
+      return respond(response, 400, { error: error.message });
+    }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/reminders/preview-variant') {
+    try {
+      const data = await readJson(request);
+      const text = String(data.text || '').trim();
+      if (!text) return respond(response, 400, { error: 'Teks pesan tidak boleh kosong.' });
+      const variant = await createReminderVariant(text, 'Pratinjau variasi');
+      return respond(response, 200, { original: text, variant });
+    } catch (error) {
+      return respond(response, 400, { error: error.message });
+    }
+  }
+  const testMatch = url.pathname.match(/^\/api\/reminders\/([a-z0-9_-]+)\/test$/i);
+  if (testMatch && request.method === 'POST') {
+    if (!connectionManager?.isReady()) {
+      return respond(response, 400, { error: 'WhatsApp belum terhubung. Pastikan bot sudah siap.' });
+    }
+    try {
+      const result = await testSendSpecificReminder(connectionManager.getClient(), testMatch[1]);
+      return respond(response, 200, {
+        success: true,
+        message: `Pengingat "${result.name}" berhasil dikirim ke grup target.`
+      });
     } catch (error) {
       return respond(response, 400, { error: error.message });
     }

@@ -6,7 +6,35 @@ import { readSecureJson, writeSecureJson } from '../services/encryptionService.j
 
 const styleFile = path.join(stateDir, 'ai-style.json');
 export const MAX_AI_STYLE_CHARACTERS = 3000;
-export const DEFAULT_AI_STYLE = 'Ngobrol seperti teman di grup: pakai bahasa Indonesia sehari-hari yang natural dan santai. Sesuaikan aku/kamu atau gue/lo dengan konteks; jangan memaksakan slang, candaan, atau emoji. Jawab inti pertanyaan dengan ringkas—untuk pertanyaan sederhana satu kalimat cukup. Jangan membuka jawaban dengan perkenalan, mengulang pertanyaan, atau menutup dengan tawaran bantuan yang tidak diminta.';
+
+export const AI_STYLE_PRESETS = [
+  {
+    id: 'santai',
+    name: 'Santai & Luwes (Default)',
+    description: 'Bahasa Indonesia santai, akrab, mengalir luwes layaknya teman tongkrongan yang cerdas, tidak kaku dan tidak bertele-tele.',
+    instruction: 'Ngobrol seperti teman di grup: pakai bahasa Indonesia sehari-hari yang natural, santai, dan luwes. Sesuaikan aku/kamu atau gue/lo dengan lawan bicara secara luwes tanpa memaksakan slang berlebihan. Jawab inti pertanyaan secara tangkas dan komunikatif. Jangan membuka dengan salam kaku atau perkenalan diri, dan jangan menutup dengan basa-basi bantuan yang tidak diminta.'
+  },
+  {
+    id: 'profesional',
+    name: 'Profesional & Rapi',
+    description: 'Bahasa Indonesia baku, sopan, terstruktur, dan berbobot, cocok untuk grup tim kerja atau formal.',
+    instruction: 'Gunakan bahasa Indonesia yang baik, sopan, profesional, dan tertata rapi. Sampaikan penjelasan secara jelas, runtut, dan terstruktur dengan poin-poin yang mudah dipahami bila diperlukan. Hindari bahasa gaul atau slang berlebihan, namun tetap ramah dan solutif.'
+  },
+  {
+    id: 'ringkas',
+    name: 'Singkat & To The Point',
+    description: 'Sangat padat dan langsung ke sasaran (1-2 kalimat), tanpa pengantar dan tanpa penutup.',
+    instruction: 'Jawab langsung inti pertanyaan secara sangat ringkas, padat, dan to-the-point dalam 1–2 kalimat saja. Hilangkan semua pengantar, basa-basi, pengulangan pertanyaan, dan kalimat penutup. Jika diminta daftar, berikan poin terpenting saja.'
+  },
+  {
+    id: 'humoris',
+    name: 'Humoris & Akrab',
+    description: 'Seru, asik, berenergi positif, menyisipkan candaan ringan yang relevan dan bersahabat.',
+    instruction: 'Bawakan suasana yang seru, hangat, ceria, dan penuh energi positif layaknya sahabat dekat di grup. Boleh sisipkan humor ringan atau candaan santai yang relevan tanpa mengorbankan keakuratan jawaban. Tetap sopan dan tidak menyinggung anggota grup.'
+  }
+];
+
+export const DEFAULT_AI_STYLE = AI_STYLE_PRESETS[0].instruction;
 
 function loadStyle() {
   const saved = readSecureJson(styleFile, {});
@@ -25,7 +53,8 @@ export function getAiStyleSettings() {
   return {
     styleInstruction: getAiStyleInstruction(),
     defaultStyle: DEFAULT_AI_STYLE,
-    isCustom: Boolean(styleInstruction)
+    presets: AI_STYLE_PRESETS,
+    isCustom: Boolean(styleInstruction) && styleInstruction !== DEFAULT_AI_STYLE
   };
 }
 

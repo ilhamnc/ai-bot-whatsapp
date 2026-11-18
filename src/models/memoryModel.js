@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { stateDir, aiMemoryFile } from '../config.js';
 import { generateWithFallback } from '../services/aiService.js';
 import { readSecureJson, writeSecureJson } from '../services/encryptionService.js';
+import { isGreetingOnly, questionNeedsGroupContext } from '../services/promptService.js';
 
 // Nama properti turns, pending, summary, dan updatedAt dipertahankan agar data lama tetap terbaca.
 const MAX_MEMORY_PAIRS = 20;
@@ -178,21 +179,14 @@ export function getSenderKey(msg) {
   return createHash('sha256').update(id).digest('hex').slice(0, 10);
 }
 
-function questionNeedsGroupContext(question) {
-  return /\b(tadi|barusan|sebelumnya|kemarin|waktu itu|lanjut(?:in|kan)?|kelanjutannya|yang dibahas|obrolan|percakapan|cerita tadi|topik tadi|siapa yang bilang|kata (?:dia|kalian)|di grup|dari atas|keputusan|disepakati|rencana(?:nya)?|kesimpulan|hasil rapat|hasil diskusi|pembagian tugas)\b/i.test(question);
-}
-
-function isGreetingOnly(question) {
-  return /^(?:halo|hai|hi|hello|woy|yo|pagi|siang|malam|assalamu'?alaikum|tes|test)[!?. ,]*$/i.test(question.trim());
-}
-
 export function selectMemberContext(history, senderKey, question, repliedMessage = false) {
   const allTurns = Array.isArray(history?.turns) ? history.turns : [];
   if (repliedMessage || questionNeedsGroupContext(question)) {
-    // Arsip SQLite mencari chat relevan yang lebih lama; batasi memori AI agar prompt tetap hemat.
+    // Obrolan grup aktif atau merujuk percakapan sebelumnya
     return { mode: 'grup', turns: allTurns.slice(-12), summary: history?.summary || '' };
   }
   if (isGreetingOnly(question)) return { mode: 'sapaan', turns: [], summary: '' };
+
   const filteredTurns = [];
   for (let index = 0; index + 1 < allTurns.length; index += 2) {
     const user = allTurns[index];
@@ -202,6 +196,13 @@ export function selectMemberContext(history, senderKey, question, repliedMessage
       filteredTurns.push(user, model);
     }
   }
+
+  // Jika anggota belum punya riwayat pribadi tapi grup baru saja berinteraksi,
+  // sertakan konteks grup terakhir agar pembicaraan tidak terputus secara kaku.
+  if (filteredTurns.length === 0 && allTurns.length > 0) {
+    return { mode: 'grup', turns: allTurns.slice(-6), summary: history?.summary || '' };
+  }
+
   return { mode: 'pribadi', turns: filteredTurns.slice(-12), summary: '' };
 }
 

@@ -102,7 +102,10 @@ function unwrapMessage(message) {
     const wrapped = content.ephemeralMessage?.message
       || content.viewOnceMessage?.message
       || content.viewOnceMessageV2?.message
-      || content.documentWithCaptionMessage?.message;
+      || content.documentWithCaptionMessage?.message
+      || content.editedMessage?.message?.protocolMessage?.editedMessage
+      || content.editedMessage?.message
+      || content.protocolMessage?.editedMessage;
     if (!wrapped) break;
     content = wrapped;
   }
@@ -277,6 +280,18 @@ export class BaileysClient extends EventEmitter {
       options.quoted ? { quoted: options.quoted } : {});
     if (sent) this.emit('message_create', this.normalizeMessage(sent));
     return sent;
+  }
+
+  async sendTyping(chatId) {
+    if (!this.socket || !chatId) return;
+    try { await this.socket.sendPresenceUpdate('composing', chatId); }
+    catch { /* Abaikan error presence jika koneksi sedang sibuk */ }
+  }
+
+  async clearTyping(chatId) {
+    if (!this.socket || !chatId) return;
+    try { await this.socket.sendPresenceUpdate('paused', chatId); }
+    catch { /* Abaikan error presence jika koneksi sedang sibuk */ }
   }
 
   async getChatById(chatId) {

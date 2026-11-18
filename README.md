@@ -1,4 +1,4 @@
-﻿# AiBot WhatsApp
+# AiBot WhatsApp
 
 Bot untuk satu grup WhatsApp. Groq menjadi provider utama, lalu bot mencoba model Groq dan Gemini berurutan saat model sebelumnya terkena kuota atau error. Bot juga dapat membaca gambar lewat Qwen Vision di Groq dan beralih ke Gemini jika perlu, mengelola konteks percakapan, dan mengirim reminder terjadwal.
 
@@ -12,23 +12,27 @@ src/
     messageRoutes.js            # Mendaftarkan route event pesan WhatsApp
     dashboardRoutes.js          # Server HTTP dashboard reminder lokal
   controllers/
-    messageController.js        # Perintah grup dan alur respons pesan
-    dashboardController.js      # API pengelolaan reminder
+    messageController.js        # Alur orkestrasi pesan WhatsApp & tanya-jawab AI
+    commandController.js        # Penanganan perintah bot (!help, !status, admin, dll)
+    dashboardController.js      # API pengelolaan reminder, jadwal shalat, uji kirim & gaya AI
   services/
     aiService.js                # Provider AI, fallback model, antrean, dan kuota
+    promptService.js            # Generator prompt AI luwes, persona, format kutipan, & shalat
+    mentionService.js           # Deteksi sebutan bot, awalan percakapan, & ekstrak kutipan
+    imageService.js             # Kompresi & optimasi gambar untuk model vision AI
     projectKnowledgeService.js  # Referensi fitur/source proyek dan snapshot reminder untuk AI
     encryptionService.js        # Enkripsi AES-256-GCM untuk data sensitif lokal
     reminderScheduler.js        # Cron job dinamis untuk setiap reminder
     whatsappConnectionService.js # Pemilihan dan penautan sesi WhatsApp
-    baileysClient.js          # Adapter pesan, QR, dan koneksi Baileys
+    baileysClient.js            # Adapter pesan, QR, presence (mengetik), dan koneksi Baileys
   models/
     memoryModel.js              # Penyimpanan konteks dan ringkasan percakapan
-    aiStyleModel.js             # Preferensi gaya bahasa AiBot yang disimpan terenkripsi
-    chatHistoryModel.js          # Arsip pesan grup dan pencarian konteks lama (SQLite)
-    reminderModel.js            # Data reminder dan pengiriman pesan
+    aiStyleModel.js             # Preferensi & preset gaya bahasa AiBot (Santai, Profesional, dll)
+    chatHistoryModel.js         # Arsip pesan grup dan pencarian konteks lama (SQLite)
+    reminderModel.js            # Data reminder, uji kirim spesifik, dan jadwal shalat
     botSettingsModel.js         # Riwayat akun dan grup target
   views/
-    reminders.html              # UI tambah, edit, aktifkan, dan hapus reminder
+    reminders.html              # UI dashboard: uji kirim, pratinjau variasi, filter, dan presets
 reminder.txt                    # Teks lama untuk migrasi pengingat pertama
 ```
 
@@ -78,8 +82,9 @@ Jika Railway sebelumnya menyimpan key Gemini sebagai `AI_API_KEY`, pindahkan nil
 
 | Perintah | Kegunaan |
 |---|---|
-| `!ai pertanyaan` atau `@AiBot pertanyaan` | Bertanya ke AI |
+| `!ai pertanyaan`, `@AiBot pertanyaan`, atau `bot, pertanyaan` | Bertanya ke AI secara luwes |
 | Balas pesan AiBot | Melanjutkan obrolan tanpa mention |
+| Kutip pesan anggota + tag `@AiBot` | Menanyakan/menanggapi pesan anggota lain yang dikutip |
 | `!schedule`, `!status`, `!model`, `!memori` | Melihat status bot dan semua jadwal reminder |
 | `!help` | Daftar perintah |
 | `!idgrup` | Mencatat grup dan menjadikannya target jika belum dikunci |
