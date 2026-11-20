@@ -5,12 +5,18 @@ import { readSecureJson, writeSecureJson } from './encryptionService.js';
 
 // 1. Tag eksplisit @AiBot, @iBot, @bot, @~AiBot, @~iBot, @~AiBot 🤖
 const ROBUST_BOT_NAME_MENTION = /@~?(?:AiBot|ibot|bot)(?=$|[\s\p{P}\p{S}\p{Cf}])/iu;
+const BOT_NAME_ONLY = /^@?~?(?:aibot|ibot|bot)[!?.]*$/i;
+const BOT_SELF_REFERENCE = /\b(?:aibot|ibot|bot[-\s]*nya)\b/i;
+const BOT_WORD_REFERENCE = /\b(?:aibot|ibot|bot)\b/i;
 
 // 2. Awalan pesan dengan aibot / ibot / bot (contoh: "ibot, ini apa?", "bot: halo", "aibot tolong")
 const NATURAL_BOT_PREFIX = /^(?:@~?(?:aibot|ibot|bot)|aibot|ibot|bot)\s*[,:\s]\s*/i;
 
 // 3. Akhiran pesan atau kalimat yang memanggil aibot / ibot / bot (contoh: "Ini enak ga ibot?", "gimana bot?", "bisa bantu ga aibot?")
 const NATURAL_BOT_SUFFIX = /[\s,.:;!?]+(?:aibot|ibot|bot)\s*[?!.,]*$/i;
+
+// Pertanyaan yang menyebut bot sebagai subjek juga merupakan panggilan, misalnya "bot-nya kok diam?".
+const BOT_REFERENCE_QUESTION = /\b(?:aibot|ibot|bot)(?:[-\s]*nya)?\b(?=[^.!?\n]{0,100}(?:\?|\bkah\b|\bkok\b|\bkenapa\b|\bgimana\b|\bapa\b))/i;
 
 // 4. Panggilan vokatif langsung di dalam kalimat (contoh: "menurut ibot gimana?", "tolong bot", "tanya aibot")
 const NATURAL_BOT_VOCATIVE = /\b(?:halo|hai|pagi|siang|sore|malam|tolong|menurut|tanya|ke)\s+(?:aibot|ibot|bot)\b/i;
@@ -44,9 +50,13 @@ export function saveBotMentionId(id) {
 export function hasBotNameMention(text) {
   const normalized = normalizeMentionText(text);
   if (!normalized) return false;
-  return ROBUST_BOT_NAME_MENTION.test(normalized)
+  return BOT_NAME_ONLY.test(normalized)
+    || ROBUST_BOT_NAME_MENTION.test(normalized)
+    || BOT_SELF_REFERENCE.test(normalized)
+    || BOT_WORD_REFERENCE.test(normalized)
     || NATURAL_BOT_PREFIX.test(normalized)
     || NATURAL_BOT_SUFFIX.test(normalized)
+    || BOT_REFERENCE_QUESTION.test(normalized)
     || NATURAL_BOT_VOCATIVE.test(normalized);
 }
 

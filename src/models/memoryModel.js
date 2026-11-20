@@ -182,8 +182,9 @@ export function getSenderKey(msg) {
 export function selectMemberContext(history, senderKey, question, repliedMessage = false) {
   const allTurns = Array.isArray(history?.turns) ? history.turns : [];
   if (repliedMessage || questionNeedsGroupContext(question)) {
-    // Obrolan grup aktif atau merujuk percakapan sebelumnya
-    return { mode: 'grup', turns: allTurns.slice(-12), summary: history?.summary || '' };
+    // Untuk rujukan ke obrolan grup, controller memakai arsip chat aktual yang berurutan.
+    // Jangan ikutkan giliran AI lama yang bisa berasal dari topik berbeda.
+    return { mode: 'grup', turns: [], summary: history?.summary || '' };
   }
   if (isGreetingOnly(question)) return { mode: 'sapaan', turns: [], summary: '' };
 
@@ -197,10 +198,9 @@ export function selectMemberContext(history, senderKey, question, repliedMessage
     }
   }
 
-  // Jika anggota belum punya riwayat pribadi tapi grup baru saja berinteraksi,
-  // sertakan konteks grup terakhir agar pembicaraan tidak terputus secara kaku.
+  // Jika anggota belum punya riwayat pribadi, controller memakai arsip chat grup aktual.
   if (filteredTurns.length === 0 && allTurns.length > 0) {
-    return { mode: 'grup', turns: allTurns.slice(-6), summary: history?.summary || '' };
+    return { mode: 'grup', turns: [], summary: history?.summary || '' };
   }
 
   return { mode: 'pribadi', turns: filteredTurns.slice(-12), summary: '' };

@@ -9,6 +9,7 @@ export const PRAYER_NAMES = {
 };
 
 const GROUP_CONTEXT_KEYWORDS = /\b(tadi|barusan|sebelumnya|kemarin|waktu itu|lanjut(?:in|kan)?|kelanjutannya|terus|trus|selanjutnya|lalu|yang dibahas|obrolan|percakapan|cerita tadi|topik tadi|siapa yang bilang|kata (?:dia|kalian|mereka)|di grup|dari atas|keputusan|disepakati|rencana(?:nya)?|kesimpulan|hasil rapat|hasil diskusi|pembagian tugas|notulen|itu|ini|yang mana|yang itu|yang tadi|kalau gitu|kalo gitu|gimana kalau|gimana kalo|selain itu|alternatifnya|bedanya apa|maksudnya|kenapa gitu|contohnya|ada lagi)\b/i;
+const GROUP_OPINION_CUES = /\b(?:menurut\s*(?:mu|kamu|lo|lu|anda)|pendapat\s*(?:mu|kamu|lo|lu|anda)?|opini\s*(?:mu|kamu|lo|lu|anda)?|setuju\s*(?:nggak|enggak|gak|ga|kah)?|gimana\s*(?:menurut\s*(?:mu|kamu|lo|lu|anda))?)\b/i;
 
 const GREETING_PATTERN = /^(?:halo|hai|hi|hello|woy|yo|pagi|siang|sore|malam|assalamu'?alaikum|tes|test|ping|p)[!?. ,]*$/i;
 
@@ -17,7 +18,8 @@ export function isGreetingOnly(question) {
 }
 
 export function questionNeedsGroupContext(question) {
-  return GROUP_CONTEXT_KEYWORDS.test(String(question || '').trim());
+  const text = String(question || '').trim();
+  return GROUP_CONTEXT_KEYWORDS.test(text) || GROUP_OPINION_CUES.test(text);
 }
 
 export function getPrayerTimeRequest(question) {
@@ -77,6 +79,10 @@ export function buildChatSystemPrompt({
     '- Nada bicara adaptif: santai, akrab, dan bersahabat untuk obrolan kasual; jelas, informatif, dan solutif untuk pertanyaan serius/teknis.',
     '- Hindari gaya bahasa kaku seperti customer service atau mesin otomatis (hindari perkenalan berulang "Halo, saya AiBot...", dan jangan menutup dengan basa-basi seperti "Ada yang bisa saya bantu lagi?").',
     '- Untuk sapaan santai atau pertanyaan singkat, jawablah secara lugas dan pas tanpa bertele-tele.',
+    '- PANJANG JAWABAN: Default cukup satu kalimat pendek. Untuk pertanyaan sederhana atau identifikasi gambar, jawab langsung dalam satu kalimat; maksimal dua kalimat pendek jika memang perlu.',
+    '- Jangan menambahkan latar belakang, fakta tambahan, saran, atau pertanyaan lanjutan yang tidak diminta. Jika anggota hanya menyampaikan pernyataan, beri tanggapan singkat tanpa otomatis mengajukan pertanyaan.',
+    '- Jangan tulis nama atau label pengirim seperti "🤖 AiBot" di awal jawaban. WhatsApp sudah menampilkan nama pengirim di atas pesan.',
+    '- Beri penjelasan panjang, daftar, atau langkah-langkah hanya jika diminta atau memang diperlukan agar jawaban tidak menyesatkan.',
     '- Gunakan format yang nyaman dibaca di layar chat WhatsApp: gunakan paragraf pendek, dan bullet points hanya jika diperlukan agar tidak menjadi dinding teks panjang.',
     '- Maksimal satu emoji sesekali yang relevan agar terasa hangat dan tidak berlebihan.',
     '',
@@ -85,8 +91,9 @@ export function buildChatSystemPrompt({
     '- Setiap pesan memiliki tanda [ANGGOTA:id] Nama. ID yang berbeda menandakan orang yang berbeda.',
     '- Jangan mencampuradukkan cerita, identitas, atau aktivitas seorang anggota dengan anggota lainnya.',
     '- Bila anggota merujuk obrolan sebelumnya atau mengajukan pertanyaan lanjutan, gunakan konteks grup yang tersedia secara cerdas dan nyambung.',
+    '- Untuk pertanyaan singkat atau samar seperti "menurutmu gimana?" atau "setuju?", gunakan pembahasan grup terbaru yang relevan sebagai topiknya. Jangan menggantinya dengan percakapan pribadi anggota yang lebih lama.',
     '',
-    `PANDUAN GAYA DARI PENGATURAN DASHBOARD:\n${customStyleText || 'Gunakan bahasa Indonesia santai yang luwes, enak dibaca, dan tidak kaku.'}`,
+    `PANDUAN GAYA DARI PENGATURAN DASHBOARD (ikuti untuk nada bicara, tetap patuhi batas panjang jawaban):\n${customStyleText || 'Gunakan bahasa Indonesia santai yang luwes, enak dibaca, dan tidak kaku.'}`,
     '',
     `MODE KONTEKS AKTIF: ${contextMode}`
   ];
@@ -109,7 +116,7 @@ export function buildChatSystemPrompt({
 
   if (summary) {
     baseInstructions.push(
-      `\nRINGKASAN PERCAKAPAN GRUP SEBELUMNYA (data konteks referensi):\n${summary}`
+      `\nRINGKASAN PERCAKAPAN GRUP SEBELUMNYA (konteks lama sebagai referensi; utamakan pesan grup terbaru bila topiknya berbeda):\n${summary}`
     );
   }
 

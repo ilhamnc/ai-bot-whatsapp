@@ -24,8 +24,12 @@ test('mentionService mendeteksi berbagai variasi panggilan bot', () => {
   assert.equal(hasBotNameMention('Ini kira2 enak ga @~AiBot 🤖 ?'), true);
   assert.equal(hasBotNameMention('menurut bot gimana?'), true);
   assert.equal(hasBotNameMention('menurut ibot gimana?'), true);
+  assert.equal(hasBotNameMention('ini bot nya blm makan kah?'), true);
+  assert.equal(hasBotNameMention('bot'), true);
+  assert.equal(hasBotNameMention('aibot'), true);
+  assert.equal(hasBotNameMention('ibot'), true);
   assert.equal(hasBotNameMention('cuaca hari ini cerah'), false);
-  assert.equal(hasBotNameMention('sistem bot ini bagus'), false);
+  assert.equal(hasBotNameMention('sistem bot ini bagus'), true);
 });
 
 test('mentionService membersihkan tag dan mengekstrak pertanyaan', () => {

@@ -55,7 +55,7 @@ Pengingat shalat memiliki sakelar terpisah di dashboard. Atur negara, kota, dan 
 
 Saat mengembangkan kode, jalankan `npm run dev`. Nodemon akan memulai ulang bot ketika file program atau `.env` disimpan. Pengaturan pemantauan berada di `package.json` dan mengabaikan data sesi serta `.state` agar perubahan data runtime tidak memicu restart.
 
-AiBot menyimpan pesan teks dan caption di grup target ke `.state/chat-history.sqlite`, termasuk pesan anggota dan balasan bot. File media aslinya tidak disimpan. Arsip mulai terisi setelah bot berjalan dengan grup target terpilih; pesan lama sebelum itu tidak otomatis diimpor. Pertanyaan yang merujuk obrolan grup memakai beberapa pesan terbaru dan pesan lama yang cocok dengan kata kunci, dengan konteks arsip tambahan dibatasi sekitar 5.000 karakter. Penyimpanan tidak memanggil AI; konteks arsip hanya menambah token ketika dipakai dalam pertanyaan. Perintah admin `!hapusriwayat` menghapus arsip untuk grup aktif; `!resetai` hanya membersihkan memori percakapan AI.
+AiBot menyimpan pesan teks dan caption di grup target ke `.state/chat-history.sqlite`, termasuk pesan anggota dan balasan bot. File media aslinya tidak disimpan. Arsip mulai terisi setelah bot berjalan dengan grup target terpilih; pesan lama sebelum itu tidak otomatis diimpor. Pertanyaan yang merujuk obrolan grup memakai hingga 50 pesan terbaru dan beberapa pesan lama yang cocok dengan kata kunci, dengan konteks dibatasi sekitar 14.000 karakter. Setelah sekitar 40 pesan melewati jendela terbaru, AI merangkum pesan lama, termasuk obrolan antaranggota. Perintah admin `!hapusriwayat` menghapus arsip dan ringkasan grup aktif; `!resetai` hanya membersihkan memori percakapan AI.
 
 Saat ditanya tentang sistem AiBot, AI memakai README dan potongan source yang relevan sebagai referensi. Snapshot reminder, jadwal, status aktif, zona waktu, dan isi pesan diambil dari pengaturan runtime pada setiap pertanyaan sehingga perubahan dashboard langsung tercermin. File `.env`, sesi WhatsApp, dan arsip chat tidak dimasukkan sebagai pengetahuan proyek; AI dapat menjelaskan alur kode tanpa membagikan source lengkap atau secret.
 
@@ -83,6 +83,7 @@ Jika Railway sebelumnya menyimpan key Gemini sebagai `AI_API_KEY`, pindahkan nil
 | Perintah | Kegunaan |
 |---|---|
 | `!ai pertanyaan`, `@AiBot pertanyaan`, atau `bot, pertanyaan` | Bertanya ke AI secara luwes |
+| Sebut `bot`, `aibot`, atau `ibot` tanpa permintaan jelas | AiBot menyahut singkat dan bervariasi sesuai gaya dashboard |
 | Balas pesan AiBot | Melanjutkan obrolan tanpa mention |
 | Kutip pesan anggota + tag `@AiBot` | Menanyakan/menanggapi pesan anggota lain yang dikutip |
 | `!schedule`, `!status`, `!model`, `!memori` | Melihat status bot dan semua jadwal reminder |
@@ -112,5 +113,5 @@ Bot memakai Baileys melalui WebSocket, tanpa Chrome. Jika sebelumnya memakai `wh
 3. Buat domain publik untuk service, buka dashboard dengan login tadi, kemudian pindai QR di **Pengaturan → Set WA Bot**. Pilih grup dengan `!idgrup`.
 4. Pastikan volume menyimpan `/data/state` dan `/data/auth` agar login WhatsApp, pengaturan, dan arsip SQLite tetap ada setelah deploy ulang.
 
-Arsip chat otomatis menghapus pesan yang lebih lama dari 21 hari dan menjalankan pembersihan saat bot mulai serta setiap hari. `!hapusriwayat` tetap dapat menghapus seluruh arsip grup lebih awal. Memori AI menyimpan paling banyak 20 pasangan percakapan dan ringkasan hingga 1.200 karakter; memori yang tidak aktif dihapus setelah 30 hari. Ringkasan hanya merangkum percakapan AI, bukan semua chat biasa. Railway Free memiliki batas volume 0,5 GB; pantau pemakaian volumenya. Riwayat hanya merekam pesan baru di grup target saat bot berjalan.
+Arsip chat otomatis menghapus pesan yang lebih lama dari 21 hari dan menjalankan pembersihan saat bot mulai serta setiap hari. `!hapusriwayat` tetap dapat menghapus seluruh arsip dan ringkasan grup lebih awal. Memori AI terpisah menyimpan paling banyak 20 pasangan percakapan dan ringkasan hingga 1.200 karakter; memori yang tidak aktif dihapus setelah 30 hari. Ringkasan arsip turut mencakup chat biasa antaranggota. Railway Free memiliki batas volume 0,5 GB; pantau pemakaian volumenya. Riwayat hanya merekam pesan baru di grup target saat bot berjalan.
 
